@@ -80,6 +80,8 @@ async function pull(){
  db.teams=gr.map(g=>({id:g.id,name:g.name,about:g.about||"",owner:g.owner,members:gm.filter(m=>m.group_id===g.id).map(m=>m.user_id)}));
  db.msgs=ms.map(m=>({id:m.id,from:m.sender,to:m.recipient,x:m.body,t:T(m.created_at),read:!!m.read_at}));
  db.notifs=nf.map(n=>({id:n.id,to:n.user_id,from:n.actor_id,text:n.text,t:T(n.created_at),read:n.read}))}
+function flash(m){const e=document.createElement("div");e.setAttribute("role","status");e.textContent=m;e.style.cssText="position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:90vw;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:6px;z-index:20;font-weight:600";document.body.appendChild(e);setTimeout(()=>e.remove(),4500)}
+const vfix=r=>{if(r.error){fix(r);flash(r.error.message.includes("Vote limit")?r.error.message:"Could not save your vote.")}};
 const fix=r=>{if(r.error){console.error(r.error);pull().then(()=>render())}};
 const api={
  user:id=>db.users.find(u=>u.id===id),
@@ -94,9 +96,9 @@ const api={
  addPost(tag,body){const id=rid();db.posts.push({id,uid:db.me,tag,text:body,t:Date.now(),score:0,my:0,comments:[]});sb.from("posts").insert({id,tag,body}).then(fix)},
  vote(p,d){const old=p.my,k={post_id:p.id,user_id:db.me};
   const nv=old===d?0:d;p.score+=nv-old;p.my=nv;
-  if(nv===0)sb.from("votes").delete().match(k).then(fix);
-  else if(old===0)sb.from("votes").insert({post_id:p.id,value:nv}).then(fix);
-  else sb.from("votes").update({value:nv}).match(k).then(fix)},
+  if(nv===0)sb.from("votes").delete().match(k).then(vfix);
+  else if(old===0)sb.from("votes").insert({post_id:p.id,value:nv}).then(vfix);
+  else sb.from("votes").update({value:nv}).match(k).then(vfix)},
  comment(p,x){p.comments.push({uid:db.me,x});sb.from("comments").insert({post_id:p.id,body:x}).then(fix)},
  del(id){db.posts=db.posts.filter(p=>p.id!==id);sb.from("posts").delete().eq("id",id).then(fix)},
  follow(u){const f=api.me().following,k={follower:db.me,followee:u.id};
