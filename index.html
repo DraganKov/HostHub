@@ -41,6 +41,7 @@ textarea{min-height:84px;resize:vertical;margin-bottom:0}
 .link{background:none;border:0;padding:0;font:600 16px Barlow,sans-serif;color:inherit;cursor:pointer;text-align:left}.link:hover{text-decoration:underline}
 .tag{font-size:13px;color:var(--od);border:1px solid var(--od);border-radius:3px;padding:0 6px}
 .body{margin:10px 0 6px;white-space:pre-wrap;overflow-wrap:anywhere}
+.vote{display:inline-flex;align-items:center;gap:6px}.vb{background:none;border:1px solid var(--line);border-radius:4px;color:var(--mute);width:32px;height:28px;cursor:pointer;font-size:13px}.vb[aria-pressed="true"]{background:var(--tip);border-color:var(--tip);color:var(--ontip)}.score{min-width:1.5em;text-align:center}
 .acts{display:flex;gap:16px;border-top:1px solid var(--line);padding-top:8px;margin-top:8px}
 .act{background:none;border:0;color:var(--mute);font:500 14px Barlow,sans-serif;cursor:pointer;padding:4px 0}
 .act[aria-pressed="true"]{color:var(--tip);font-weight:600}
@@ -70,11 +71,11 @@ let db={me:null,users:[],posts:[],teams:[],msgs:[],notifs:[]},route="feed",viewU
 const T=s=>new Date(s).getTime(),rid=()=>crypto.randomUUID();
 /* ===== Data layer: the UI reads from `db` (a local copy) and writes through `api`. Writes update `db` instantly, then save to Supabase; a failed save re-syncs from the server. ===== */
 async function pull(){
- const r=await Promise.all(["profiles","posts","likes","comments","follows","groups","group_members","messages","notifications"].map(t=>sb.from(t).select("*")));
+ const r=await Promise.all(["profiles","posts","votes","comments","follows","groups","group_members","messages","notifications"].map(t=>sb.from(t).select("*")));
  const bad=r.find(x=>x.error);if(bad)throw bad.error;
  const [pr,po,li,co,fo,gr,gm,ms,nf]=r.map(x=>x.data);
  db.users=pr.map(u=>({id:u.id,name:u.username,bio:u.bio||"",following:fo.filter(f=>f.follower===u.id).map(f=>f.followee)}));
- db.posts=po.map(p=>({id:p.id,uid:p.user_id,tag:p.tag,text:p.body,t:T(p.created_at),likes:li.filter(l=>l.post_id===p.id).map(l=>l.user_id),
+ db.posts=po.map(p=>({id:p.id,uid:p.user_id,tag:p.tag,text:p.body,t:T(p.created_at),score:p.score||0,my:(li.find(v=>v.post_id===p.id)||{value:0}).value,
   comments:co.filter(c=>c.post_id===p.id).sort((a,b)=>T(a.created_at)-T(b.created_at)).map(c=>({uid:c.user_id,x:c.body}))}));
  db.teams=gr.map(g=>({id:g.id,name:g.name,about:g.about||"",owner:g.owner,members:gm.filter(m=>m.group_id===g.id).map(m=>m.user_id)}));
  db.msgs=ms.map(m=>({id:m.id,from:m.sender,to:m.recipient,x:m.body,t:T(m.created_at),read:!!m.read_at}));
@@ -90,9 +91,12 @@ const api={
  async login(email,pw){const {error}=await sb.auth.signInWithPassword({email,password:pw});return error?error.message:null},
  logout(){return sb.auth.signOut()},
  setBio(x){const m=api.me();m.bio=x.slice(0,160);sb.from("profiles").update({bio:m.bio}).eq("id",db.me).then(fix)},
- addPost(tag,body){const id=rid();db.posts.push({id,uid:db.me,tag,text:body,t:Date.now(),likes:[],comments:[]});sb.from("posts").insert({id,tag,body}).then(fix)},
- like(p){const k={post_id:p.id,user_id:db.me};
-  if(p.likes.includes(db.me)){p.likes=p.likes.filter(x=>x!==db.me);sb.from("likes").delete().match(k).then(fix)}else{p.likes.push(db.me);sb.from("likes").insert(k).then(fix)}},
+ addPost(tag,body){const id=rid();db.posts.push({id,uid:db.me,tag,text:body,t:Date.now(),score:0,my:0,comments:[]});sb.from("posts").insert({id,tag,body}).then(fix)},
+ vote(p,d){const old=p.my,k={post_id:p.id,user_id:db.me};
+  const nv=old===d?0:d;p.score+=nv-old;p.my=nv;
+  if(nv===0)sb.from("votes").delete().match(k).then(fix);
+  else if(old===0)sb.from("votes").insert({post_id:p.id,value:nv}).then(fix);
+  else sb.from("votes").update({value:nv}).match(k).then(fix)},
  comment(p,x){p.comments.push({uid:db.me,x});sb.from("comments").insert({post_id:p.id,body:x}).then(fix)},
  del(id){db.posts=db.posts.filter(p=>p.id!==id);sb.from("posts").delete().eq("id",id).then(fix)},
  follow(u){const f=api.me().following,k={follower:db.me,followee:u.id};
@@ -139,9 +143,12 @@ function drawNav(){const n=$("#nav");n.innerHTML="";if(!db.me){n.hidden=true;ret
   h("nav",{class:"tabs","aria-label":"Main"},VIEWS.map(v=>h("button",{class:"tab","aria-current":v===route?"page":null,onclick:()=>go(v)},[LABEL[v],bd[v]?h("span",{class:"badge",text:String(bd[v])}):null])))]))}
 function render(){const a=$("#app");a.innerHTML="";drawNav();a.appendChild(db.me?VIEW[route]():authView())}
 /* ===== Components ===== */
-function postCard(p,again){const liked=p.likes.includes(db.me);
+function postCard(p,again){
  const acts=h("div",{class:"acts"},[
-  h("button",{class:"act","aria-pressed":String(liked),onclick:()=>{api.like(p);again()}},[(liked?"Liked":"Like")+" ("+p.likes.length+")"]),
+  h("span",{class:"vote",role:"group","aria-label":"Vote"},[
+   h("button",{class:"vb","aria-label":"Upvote","aria-pressed":String(p.my===1),onclick:()=>{api.vote(p,1);again()}},["▲"]),
+   h("b",{class:"score",text:String(p.score),"aria-label":"Score "+p.score}),
+   h("button",{class:"vb","aria-label":"Downvote","aria-pressed":String(p.my===-1),onclick:()=>{api.vote(p,-1);again()}},["▼"])]),
   h("button",{class:"act",onclick:()=>{openC[p.id]=!openC[p.id];again()}},["Comments ("+p.comments.length+")"])]);
  if(p.uid===db.me){acts.appendChild(h("span",{class:"sp"}));acts.appendChild(h("button",{class:"act",onclick:()=>{api.del(p.id);again()}},["Delete"]))}
  const c=h("article",{class:"card post"},[h("header",{},[avatar(p.uid),h("div",{class:"who"},[nameBtn(p.uid),h("small",{text:ago(p.t)})]),h("span",{class:"sp"}),h("span",{class:"tag",text:p.tag})]),h("p",{class:"body",text:p.text}),acts]);
