@@ -94,7 +94,7 @@ Object.assign(api,{
 });
 /* ===== Views ===== */
 function fieldCard(f){const n=db.maps.filter(m=>m.fieldId===f.id).length,d=dist(f);
- return h("button",{class:"card thr fcard",onclick:()=>{curField=f.id;curMap=null;fieldMode="view";render()}},[h("div",{class:"who"},[f.name,h("small",{text:(!f.published?"DRAFT · ":fieldHidden(f)?"HIDDEN BY VOTES · ":"")+(f.kind==="store"?"STORE · ":"")+[f.city,f.code].filter(Boolean).join(", ")+(d!=null?" · "+Math.round(d)+" km away":"")+" · "+n+(n===1?" game mode":" game modes")})])])}
+ return h("button",{class:"card thr fcard",onclick:()=>{curField=f.id;curMap=null;fieldMode="view";render()}},[h("div",{class:"who"},[f.name,h("small",{text:(!f.published?"DRAFT · ":fieldHidden(f)?"HIDDEN BY VOTES · ":"")+(f.kind==="store"?"STORE · ":"")+(f.verified?"VERIFIED OWNER · ":f.source?"UNCLAIMED · ":"")+[f.city,f.code].filter(Boolean).join(", ")+(d!=null?" · "+Math.round(d)+" km away":"")+" · "+n+(n===1?" game mode":" game modes")})])])}
 function fieldForm(done){const nm=h("input",{"aria-label":"Field name",maxlength:"80",placeholder:"Field name"}),ab=h("textarea",{"aria-label":"About the field",maxlength:"1000",placeholder:"Terrain, rules, parking, what to bring"}),
  pc=h("input",{"aria-label":"Postal code",placeholder:"L6H 0A1 or 90210",maxlength:"10"}),err=h("p",{class:"err",role:"alert"}),
  kd=h("select",{"aria-label":"Listing type"},[h("option",{value:"field",text:"Playing field"}),h("option",{value:"store",text:"Store or shop"})]),
@@ -119,12 +119,13 @@ registerView("maps","Maps",()=>{if(activeMap){try{activeMap.remove()}catch(e){}a
  w.appendChild(h("div",{class:"row",style:"margin:0 0 8px"},[h("h2",{style:"margin:0",text:"Fields and maps"}),h("span",{class:"sp"}),h("button",{class:"btn",onclick:need("add a field",()=>{fieldFormOpen=true;render()})},["Add a field"])]));
  if(fieldFormOpen&&db.me)w.appendChild(fieldForm(()=>{fieldFormOpen=false;render()}));
  const kf=h("div",{class:"filters"}),dk=()=>{kf.innerHTML="";[["all","All"],["field","Fields"],["store","Stores"]].forEach(([k,t])=>kf.appendChild(chip(t,kindQ===k,()=>{kindQ=k;dk();dl()})))};dk();
+ if(db.isAdmin&&typeof claimQueue==="function"&&db.claims.some(c=>c.status==="pending"))w.appendChild(claimQueue());
  if(db.isAdmin&&typeof importCard==="function")w.appendChild(importCard());
  w.appendChild(tx);w.appendChild(kf);dl();w.appendChild(list);return w},{pos:40});
 function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m=>m.fieldId===f.id),msg=h("p",{class:"err",role:"alert"}),cur=maps.find(m=>m.id===curMap);
  const box=h("div",{class:"mapbox",role:"region","aria-label":"Map of "+f.name}),ro=h("div",{class:"mapro","aria-live":"off"},["Move the pointer over the map for coordinates"]),bar=h("div",{class:"mapbar"}),
   mapw=h("div",{class:"mapw"},[box,ro]),wrap=h("div",{class:"tacmap"},[mapw,bar]),editing=own&&(fieldMode==="boundary"||(fieldMode==="map"&&cur));
- w.appendChild(h("div",{class:"row",style:"margin:0 0 8px"},[h("button",{class:"chip",onclick:()=>{curField=null;curMap=null;render()}},["All fields"]),h("h2",{style:"margin:0",text:f.name})]));
+ w.appendChild(h("div",{class:"row",style:"margin:0 0 8px"},[h("button",{class:"chip",onclick:()=>{curField=null;curMap=null;render()}},["All fields"]),h("h2",{style:"margin:0",text:f.name}),f.verified?h("span",{class:"stat good",title:"An admin confirmed this listing is run by its owner",text:"✓ Verified owner"}):null]));
  w.appendChild(h("div",{class:"fine",text:(f.kind==="store"?"Store · ":"")+[f.address,f.city,f.code].filter(Boolean).join(", ")}));
  if(f.website&&/^https?:\/\//.test(f.website))w.appendChild(h("div",{class:"fine"},[h("a",{href:f.website,target:"_blank",rel:"noopener noreferrer nofollow",text:f.website.replace(/^https?:\/\/(www\.)?/,"").slice(0,60)})]));
  if(f.source)w.appendChild(h("div",{class:"fine",text:"Listing imported from "+f.source+"."}));
@@ -142,6 +143,7 @@ function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m
    store?null:step(3,nm>0,"Game mode maps",nm?nm+" added":"Optional. Add objectives, spawns, zones and range rings for each game mode below.",null),
    h("p",{class:"fine",text:"Publishing posts this field to the feed for "+(f.code||"your area")+" and nearby. Members can upvote or downvote it, and a field that reaches −5 is hidden from everyone except you and admins."}),
    pubErr,pb]))};
+ if(typeof claimCard==="function"){const cc=claimCard(f);if(cc)w.appendChild(cc)}
  w.appendChild(setup);api.fieldBoundary(f.id).then(drawSetup).catch(()=>drawSetup(null));
  if(fieldHidden(f)&&(own||db.isAdmin)){const hb=h("section",{class:"card"},[h("div",{class:"who"},["Hidden by community votes",h("small",{text:"Its score is "+fieldScore(f)+". Only you and admins can see this field."})])]);
   if(db.isAdmin){const er=h("p",{class:"err",role:"alert"});hb.appendChild(h("div",{class:"row"},[h("button",{class:"btn",onclick:async()=>{const e=await api.reviewField(f.id,"restore");if(e)er.textContent=e;else{flash("Restored");render()}}},["Restore it"]),
