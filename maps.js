@@ -116,7 +116,7 @@ registerView("maps","Maps",()=>{if(activeMap){try{activeMap.remove()}catch(e){}a
  w.appendChild(tx);dl();w.appendChild(list);return w},{pos:40});
 function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m=>m.fieldId===f.id),msg=h("p",{class:"err",role:"alert"}),cur=maps.find(m=>m.id===curMap);
  const box=h("div",{class:"mapbox",role:"region","aria-label":"Map of "+f.name}),ro=h("div",{class:"mapro","aria-live":"off"},["Move the pointer over the map for coordinates"]),bar=h("div",{class:"mapbar"}),
-  wrap=h("div",{class:"tacmap"},[box,bar,ro]),editing=own&&(fieldMode==="boundary"||(fieldMode==="map"&&cur));
+  mapw=h("div",{class:"mapw"},[box,ro]),wrap=h("div",{class:"tacmap"},[mapw,bar]),editing=own&&(fieldMode==="boundary"||(fieldMode==="map"&&cur));
  w.appendChild(h("div",{class:"row",style:"margin:0 0 8px"},[h("button",{class:"chip",onclick:()=>{curField=null;curMap=null;render()}},["All fields"]),h("h2",{style:"margin:0",text:f.name})]));
  w.appendChild(h("div",{class:"fine",text:[f.city,f.code].filter(Boolean).join(", ")}));
  w.appendChild(h("div",{class:"row",style:"margin-top:0"},[h("small",{class:"fine",text:"Run by "}),nameBtn(f.owner)]));
