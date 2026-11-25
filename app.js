@@ -100,10 +100,12 @@ function go(r,arg){route=r;if(r==="profile")viewUid=arg||null;if(r==="messages")
  try{if(location.hash!=="#"+r)location.hash=r}catch(e){}render();scrollTo(0,0)}
 addEventListener("hashchange",()=>{const r=location.hash.slice(1);if(META.some(m=>m.id===r)&&r!==route){route=r;viewUid=null;chatUid=null;render()}});
 const tabVisible=m=>db.me||!(m.auth||m.userNav);
-function drawNav(){const n=$("#nav");n.innerHTML="";if(db.mfaPending){n.hidden=true;return}n.hidden=false;
+function drawNav(){const n=$("#nav");n.innerHTML="";const sh=$("#shell");if(sh)sh.classList.toggle("solo",!!db.mfaPending);if(db.mfaPending){n.hidden=true;return}n.hidden=false;
  const bd=db.me?{alerts:db.notifs.filter(x=>x.to===db.me&&!x.read).length,messages:db.msgs.filter(m=>m.to===db.me&&!m.read).length}:{};
- const right=db.me?null:h("button",{class:"btn",onclick:()=>openAuth("","login")},["Log in"]);
- n.appendChild(h("div",{class:"in"},[h("div",{class:"row",style:"margin:0;flex-wrap:nowrap"},[h("div",{class:"brand"},[BRAND[0]+" ",h("span",{text:BRAND[1]})]),h("span",{class:"sp"}),right]),
+ const u=db.me?api.user(db.me):null,
+  acct=u?h("div",{class:"acct"},[h("button",{class:"link me",onclick:()=>go("profile",db.me)},[u.name,h("small",{text:"Rep "+(u.rep||0)})]),h("div",{class:"row2"},[h("button",{class:"chip",onclick:()=>go("profile")},["Account"]),h("button",{class:"chip",onclick:()=>api.logout()},["Sign out"])])])
+   :h("div",{class:"acct"},[h("div",{class:"row2"},[h("button",{class:"btn",onclick:()=>openAuth("","login")},["Log in"]),h("button",{class:"chip",onclick:()=>openAuth("","signup")},["Create account"])])]);
+ n.appendChild(h("div",{class:"in"},[h("div",{class:"brand"},[BRAND[0]+" ",h("span",{text:BRAND[1]})]),acct,
   h("nav",{class:"tabs","aria-label":"Main"},META.filter(tabVisible).map(m=>h("button",{class:"tab","aria-current":m.id===route?"page":null,onclick:()=>go(m.id)},[m.label,bd[m.id]?h("span",{class:"badge",text:String(bd[m.id])}):null])))]))}
 function render(){const a=$("#app");a.innerHTML="";drawNav();
  if(db.mfaPending){a.appendChild(mfaView());return}
