@@ -207,6 +207,14 @@ textarea{border-radius:14px;min-height:64px}
 @media(min-width:800px) and (hover:hover){.nav .in{padding-top:10px}.accwrap{margin:0 0 4px}.brand{height:38px;margin-top:2px}}
 @media(max-width:799px){.acct{order:0;margin:0}.brand{order:1;margin-left:auto}.nav .in{flex-wrap:nowrap}.acct .row2{flex-wrap:nowrap}.acct .chip{background:var(--bg)}.brand{white-space:nowrap;font-size:19px}}
 .brand .bm{display:none}@media (min-width:800px) and (hover:hover){.brand .bm{display:block}}
+
+/* Expanded sidebar shows the full name instead of the AH mark (they cross-fade). */
+@media (min-width:800px) and (hover:hover){
+ .brand{position:relative}
+ .brand .bm{position:absolute;left:0;top:0;height:100%;display:flex;align-items:center;justify-content:center;transition:opacity .15s ease}
+ .brand .bf{margin-left:0;padding-left:12px}
+ .nav:hover .brand .bm,.nav:focus-within .brand .bm{opacity:0}
+}
 </style>
 </head>
 <body>
