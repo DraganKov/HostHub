@@ -43,12 +43,12 @@ db.events=[];db.regs=[];db.payinfo={};db.fields=[];db.maps=[];db.settings=null;d
 pullHooks.push(async()=>{
  const since=new Date(Date.now()-90*864e5).toISOString();
  const [ev,fi,fm]=await Promise.all([sb.from("events").select("*").gte("starts_at",since).order("starts_at").limit(500),
-  sb.from("fields").select("id,owner,name,about,postal_code,city,lat,lng,created_at,published,post_id,reviewed,kind,address,website,source,verified"),sb.from("field_maps").select("id,field_id,name,notes,updated_at")]);
+  sb.from("fields").select("id,owner,name,about,postal_code,city,lat,lng,created_at,published,post_id,reviewed,kind,address,website,source,verified,venue_type,province,facebook_url,instagram_url,discord_url"),sb.from("field_maps").select("id,field_id,name,notes,updated_at")]);
  const bad=[ev,fi,fm].find(x=>x.error);if(bad)throw bad.error;
  let rg={data:[]},pi={data:[]},st={data:[]},ad={data:[]};
  if(db.me){[rg,pi,st,ad]=await Promise.all([sb.from("registrations").select("*"),sb.from("event_private").select("*"),sb.from("user_settings").select("*").eq("user_id",db.me),sb.from("admins").select("user_id").eq("user_id",db.me)])}
  db.events=ev.data.map(e=>({id:e.id,host:e.host,fieldId:e.field_id,mapId:e.map_id,title:e.title,desc:e.description||"",start:T(e.starts_at),end:e.ends_at?T(e.ends_at):null,venue:e.venue||"",code:e.postal_code,city:e.city||"",lat:e.lat,lng:e.lng,cap:e.capacity,price:e.price_cents||0,prepay:!!e.prepay_required,regCount:e.reg_count||0,cancelled:!!e.cancelled,rules:Array.isArray(e.rules)?e.rules:[],quizOn:!!e.quiz_required}));
- db.fields=fi.data.map(f=>({id:f.id,owner:f.owner,name:f.name,about:f.about||"",code:f.postal_code,city:f.city||"",lat:f.lat,lng:f.lng,published:!!f.published,postId:f.post_id||null,reviewed:!!f.reviewed,kind:f.kind||"field",address:f.address||"",website:f.website||"",source:f.source||"",verified:!!f.verified}));
+ db.fields=fi.data.map(f=>({id:f.id,owner:f.owner,name:f.name,about:f.about||"",code:f.postal_code,city:f.city||"",lat:f.lat,lng:f.lng,published:!!f.published,postId:f.post_id||null,reviewed:!!f.reviewed,kind:f.kind||"field",address:f.address||"",website:f.website||"",source:f.source||"",verified:!!f.verified,venueType:f.venue_type||"",province:f.province||"",fb:f.facebook_url||"",ig:f.instagram_url||"",dc:f.discord_url||""}));
  db.maps=fm.data.map(m=>({id:m.id,fieldId:m.field_id,name:m.name,notes:m.notes||""}));
  db.regs=(rg.data||[]).map(r=>({eventId:r.event_id,userId:r.user_id,paid:!!r.paid,partySize:r.party_size||1,note:r.note||"",checkedIn:!!r.checked_in,waitlisted:!!r.waitlisted,at:r.created_at?T(r.created_at):0}));
  db.payinfo={};(pi.data||[]).forEach(p=>db.payinfo[p.event_id]=p.payment_info);

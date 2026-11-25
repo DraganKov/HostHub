@@ -104,7 +104,7 @@ const tabVisible=m=>db.me||!(m.auth||m.userNav);
 const ICONS={polls:"M5 20V11M12 20V4M19 20v-6",feed:"M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",search:"M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm9 16l-4-4",teams:"M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm7 1a2.5 2.5 0 1 0 0-5M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6zm13-5c2.8.3 5 2.4 5 5h-4",
  messages:"M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z",alerts:"M6 17V11a6 6 0 0 1 12 0v6l2 2H4zM10 21h4",profile:"M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z",
  events:"M7 3v4M17 3v4M4 8h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM8 13h3v3H8z",calendar:"M4 5h16v16H4zM4 10h16M9 5v16M15 5v16",
- maps:"M9 4L3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14",finances:"M12 3v18M16.5 7.5C16 5.8 14.3 5 12 5 9.5 5 8 6.2 8 8c0 4.5 8.500 2.500 8.500 7 0 1.800-1.700 3-4.500 3-2.600 0-4.400-.9-4.800-2.800"};
+ directory:"M4 4h16v16H4zM4 9h16M9 9v11",maps:"M9 4L3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14",finances:"M12 3v18M16.5 7.5C16 5.8 14.3 5 12 5 9.5 5 8 6.2 8 8c0 4.5 8.500 2.500 8.500 7 0 1.800-1.700 3-4.500 3-2.600 0-4.400-.9-4.800-2.800"};
 const icon=id=>{const s=document.createElementNS("http://www.w3.org/2000/svg","svg");s.setAttribute("viewBox","0 0 24 24");s.setAttribute("class","ico");s.setAttribute("aria-hidden","true");
  const p=document.createElementNS("http://www.w3.org/2000/svg","path");p.setAttribute("d",ICONS[id]||ICONS.feed);s.appendChild(p);return s};
 function drawNav(){const n=$("#nav");n.innerHTML="";const sh=$("#shell");if(sh)sh.classList.toggle("solo",!!db.mfaPending);if(db.mfaPending){n.hidden=true;return}n.hidden=false;
