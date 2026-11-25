@@ -71,11 +71,11 @@ async function needsMfa(){try{const {data}=await sb.auth.mfa.getAuthenticatorAss
 async function load(){try{await pull();return true}catch(e){console.error(e);$("#app").replaceChildren(h("section",{class:"card"},[h("p",{class:"err",text:"Could not load data: "+e.message}),h("p",{class:"fine",text:"If this is a new install, run the SQL files in supabase/migrations first."})]));return false}}
 let chain=Promise.resolve();
 function start(){sb.auth.onAuthStateChange((ev,s)=>{chain=chain.then(async()=>{
- if(s&&db.me&&s.user.id===db.me&&ev!=="INITIAL_SESSION"&&ev!=="MFA_CHALLENGE_VERIFIED")return;   // token refresh, tab focus
+ if(s&&db.me&&s.user.id===db.me&&ev!=="INITIAL_SESSION"&&ev!=="MFA_CHALLENGE_VERIFIED"){const v=isVerified(s.user);if(v!==db.verified){db.verified=v;render()}return}   // token refresh, tab focus; picks up a confirmation made in another tab
  if(db.mfaPending&&s&&ev!=="INITIAL_SESSION"&&ev!=="MFA_CHALLENGE_VERIFIED")return;
- if(!s){db.me=null;db.mfaPending=false;if(await load()){listen();render()}return}
+ if(!s){db.me=null;db.verified=false;db.email="";db.mfaPending=false;if(await load()){listen();render()}return}
  if(await needsMfa()){db.me=null;db.mfaPending=true;render();return}
- db.mfaPending=false;db.me=s.user.id;
+ db.mfaPending=false;db.me=s.user.id;db.verified=isVerified(s.user);db.email=s.user.email||"";
  if(!(await load()))return;
  listen();if(route==="auth")route=authReturn&&authReturn!=="auth"?authReturn:"feed";render()}).catch(e=>console.error(e))})}
 /* ===== UI helpers ===== */
@@ -92,7 +92,12 @@ const nameOf=id=>(api.user(id)||{name:"Unknown"}).name;
 const avatar=id=>h("div",{class:"av"},[nameOf(id).charAt(0).toUpperCase()]);
 const nameBtn=id=>h("button",{class:"link",onclick:()=>go("profile",id)},[nameOf(id)]);
 /* Wrap an action that needs an account: guests get a sign-in prompt instead. */
-const need=(why,fn)=>(...a)=>{if(!db.me){openAuth(why);return}return fn(...a)};
+/* A person counts as verified once their email or phone number is confirmed. The database enforces this too. */
+const isVerified=u=>!!(u&&(u.email_confirmed_at||u.phone_confirmed_at));
+const need=(why,fn)=>(...a)=>{if(!db.me){openAuth(why);return}if(!db.verified){flash("Confirm your email or phone number to "+why+". Check your inbox for the link.");return}return fn(...a)};
+/* Shown to signed-in people who haven't confirmed yet: they can read everything but can't post, vote, register or change anything. */
+function verifyBanner(){const msg=h("span",{role:"status"}),b=h("button",{class:"chip",type:"button",onclick:async()=>{b.disabled=true;const r=await sb.auth.resend({type:"signup",email:db.email,options:{emailRedirectTo:location.origin+location.pathname}});b.disabled=false;msg.textContent=r.error?" Couldn’t send it. Try again in a minute.":" Sent. Check your inbox."}},["Resend the email"]);
+ return h("section",{class:"card verify",role:"region","aria-label":"Confirm your email"},[h("div",{class:"who"},["Confirm your email to take part",h("small",{text:"You can browse everything. Posting, commenting, voting, registering and editing unlock once your email or phone number is confirmed."})]),h("div",{class:"row"},[b,msg])])}
 const bump=(from)=>{if(!db.me)return;drawNav();if(route==="alerts")render();
  if(from&&route==="messages"&&chatUid===from){const i=$("#msgin"),v=i?i.value:"";render();const j=$("#msgin");if(j){j.value=v;j.focus()}}};
 function openAuth(why,mode){authWhy=why?"Create an account or log in to "+why+".":"";if(mode)authMode=mode;if(route!=="auth")authReturn=route;route="auth";render();scrollTo(0,0)}
@@ -121,6 +126,7 @@ function render(){const a=$("#app");a.innerHTML="";drawNav();
  if(route==="auth"){a.appendChild(authView());return}
  const m=META.find(x=>x.id===route)||META[0];
  if(m.auth&&!db.me){a.appendChild(gateView(m));return}
+ if(db.me&&!db.verified)a.appendChild(verifyBanner());
  a.appendChild(VIEW[m.id]())}
 const gateView=m=>h("section",{class:"card",style:"margin-top:24px"},[h("h2",{text:m.label}),h("p",{text:"You need an account to use "+m.label+". Browsing posts, groups, events and maps is open to everyone."}),
  h("div",{class:"row"},[h("button",{class:"btn",onclick:()=>openAuth("use "+m.label,"signup")},["Create account"]),h("button",{class:"chip",onclick:()=>openAuth("use "+m.label,"login")},["Log in"])])]);

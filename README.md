@@ -29,6 +29,9 @@ Admins can bulk-import fields and stores (CSV, JSON, GeoJSON or KML) from the Ma
 - Third parties the browser contacts: Supabase, the map tile servers (OpenStreetMap, OpenTopoMap, Esri) and zippopotam.us (postal code lookup). They can see a visitor's IP address; none receive account details.
 - In the Supabase dashboard (not settable from code): require a minimum password length of 10, turn on leaked-password protection (Pro plan), add CAPTCHA on sign-up, and restrict redirect URLs to your site. Keep the service-role key out of the repo; it is only used by the alert function, along with `CRON_SECRET`.
 
+## Verified accounts
+Anyone can browse. To create, change or delete anything (posts, comments, votes, groups, polls, events, registrations, fields, maps, listings, messages, finances), a person must be signed in with a confirmed email or phone number. This is enforced in the database (`supabase/migrations/0015_verified_writes.sql`: an `is_verified()` check as a restrictive policy on every write, and at the start of every write function), not just in the page. Unconfirmed accounts see a banner with a "Resend the email" button. Personal alert settings can still be saved so a phone number can be set up.
+
 ## Privacy
 Usernames only. Email, phone and home postal code are private to the account. Alert settings are visible only to their owner.
 
