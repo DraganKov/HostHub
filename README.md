@@ -32,6 +32,9 @@ Admins can bulk-import fields and stores (CSV, JSON, GeoJSON or KML) from the Ma
 ## Verified accounts
 Anyone can browse. To create, change or delete anything (posts, comments, votes, groups, polls, events, registrations, fields, maps, listings, messages, finances), a person must be signed in with a confirmed email or phone number. This is enforced in the database (`supabase/migrations/0015_verified_writes.sql`: an `is_verified()` check as a restrictive policy on every write, and at the start of every write function), not just in the page. Unconfirmed accounts see a banner with a "Resend the email" button. Personal alert settings can still be saved so a phone number can be set up.
 
+## When should I leave?
+Event cards and field or store pages have a trip planner for signed-in people. Pick where you start (your saved area, where you are now, or a postal code), how you travel (drive, bike or walk), extra time for traffic and parking, and for events how early you want to arrive. It shows the latest time to set off, the route on a map, a link to OpenStreetMap directions, and a calendar reminder file with an alarm. Routes come from the free OpenStreetMap routing service at routing.openstreetmap.de, which has no live traffic, so there is a cushion setting and a rush-hour warning. Your start point and the destination are sent to that service only when you press the button, and nothing is saved. Code is in `commute.js`.
+
 ## Privacy
 Usernames only. Email, phone and home postal code are private to the account. Alert settings are visible only to their owner.
 

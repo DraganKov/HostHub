@@ -35,6 +35,7 @@ const icsDate=ms=>new Date(ms).toISOString().replace(/[-:]/g,"").replace(/\.\d{3
 function buildICS(list){const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//"+BRAND.join(" ")+"//Events//EN","CALSCALE:GREGORIAN","METHOD:PUBLISH"];
  list.forEach(e=>{L.push("BEGIN:VEVENT","UID:"+e.id+"@"+(location.host||"hub"),"DTSTAMP:"+icsDate(Date.now()),"DTSTART:"+icsDate(e.start),"DTEND:"+icsDate(e.end||e.start+2*36e5),
   "SUMMARY:"+icsEsc(e.title),"DESCRIPTION:"+icsEsc(e.desc+(e.price?"\nPrice: "+money(e.price):"")),"LOCATION:"+icsEsc([e.venue,e.city,e.code].filter(Boolean).join(", ")),"GEO:"+e.lat+";"+e.lng);
+  if(e.alarmMin!=null)L.push("BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+icsEsc(e.title),"TRIGGER:-PT"+e.alarmMin+"M","END:VALARM");
   if(e.cancelled)L.push("STATUS:CANCELLED");L.push("END:VEVENT")});
  L.push("END:VCALENDAR");return L.map(icsFold).join("\r\n")+"\r\n"}
 const exportICS=(list,name)=>{if(!list.length){flash("No events to export.");return}download(name||"events.ics",buildICS(list),"text/calendar")};
@@ -164,6 +165,7 @@ function eventCard(e,again){const mine=db.me===e.host,reg=myReg(e),d=dist(e),f=d
  act.appendChild(h("button",{class:"chip",type:"button",onclick:()=>exportICS([e],"event.ics")},["Add to calendar"]));
  act.appendChild(h("button",{class:"chip",type:"button","aria-pressed":String(!!mapOpen[e.id]),onclick:()=>{mapOpen[e.id]=!mapOpen[e.id];again()}},[mapOpen[e.id]?"Hide map":"Show map"]));
  c.appendChild(act);
+ if(!e.cancelled&&!ended&&typeof commutePanel==="function"){if(db.me)c.appendChild(commutePanel({key:"e:"+e.id,name:e.title,lat:e.lat,lng:e.lng,start:e.start}));else c.appendChild(h("div",{class:"row"},[h("button",{class:"chip",type:"button",onclick:need("plan your trip",()=>{})},["When should I leave?"])]))}
  if(mapOpen[e.id])c.appendChild(eventMapPanel(e));
  if(regOpen[e.id]&&!e.cancelled&&!ended&&!mine&&db.me)c.appendChild(regPanel(e,reg,again));
  const pay=db.payinfo[e.id];

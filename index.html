@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Airsoft Hub</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://cdnjs.cloudflare.com https://tile.openstreetmap.org https://tile.opentopomap.org https://*.tile.opentopomap.org https://server.arcgisonline.com; connect-src 'self' https://bbrlqxfenmmrffvsgdpr.supabase.co wss://bbrlqxfenmmrffvsgdpr.supabase.co https://api.zippopotam.us; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://cdnjs.cloudflare.com https://tile.openstreetmap.org https://tile.opentopomap.org https://*.tile.opentopomap.org https://server.arcgisonline.com; connect-src 'self' https://bbrlqxfenmmrffvsgdpr.supabase.co wss://bbrlqxfenmmrffvsgdpr.supabase.co https://api.zippopotam.us https://routing.openstreetmap.de; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -93,7 +93,7 @@ select{width:100%;border:1px solid var(--line);border-radius:4px;background:var(
  .wrap{max-width:760px;margin:0;padding:22px 28px 56px;width:100%}
  .shell.solo .wrap{margin:0 auto}
 }
-.mapbox,.mapw,.leaflet-container{isolation:isolate}.reveal{margin:0 0 8px}.reveal>.row{margin:0 0 8px}.reveal [aria-expanded="true"]{background:var(--bg)}.card .reveal{margin:6px 0 0}.areamap .mapbox{height:min(56vh,520px);min-height:320px}.areamap{margin:0 0 12px}.mappop{display:grid;gap:4px;min-width:150px}.tacmap{position:relative}.mapw{position:relative}.tacmap .mapbox{height:min(68vh,620px);min-height:380px}
+.mapbox,.mapw,.leaflet-container{isolation:isolate}.reveal{margin:0 0 8px}.trip{margin:6px 0 10px}.leave{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:12px 0 4px}.leave .big{font:700 34px/1.1 Barlow,sans-serif}.tripmap{margin:8px 0}.tripmap .mapbox{height:min(46vh,380px);min-height:260px}.reveal>.row{margin:0 0 8px}.reveal [aria-expanded="true"]{background:var(--bg)}.card .reveal{margin:6px 0 0}.areamap .mapbox{height:min(56vh,520px);min-height:320px}.areamap{margin:0 0 12px}.mappop{display:grid;gap:4px;min-width:150px}.tacmap{position:relative}.mapw{position:relative}.tacmap .mapbox{height:min(68vh,620px);min-height:380px}
 .mapbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}.mapbar .chip[aria-pressed="true"]{background:var(--tip);color:var(--ontip)}.minfo{font-size:14px;color:var(--mute)}
 .mapro{position:absolute;left:110px;bottom:8px;z-index:500;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font:500 12px/1.5 ui-monospace,monospace;max-width:calc(100% - 16px);pointer-events:none}
 .tacmap.full{position:fixed;inset:0;z-index:2000;background:var(--bg);padding:8px;display:flex;flex-direction:column}.tacmap.full .mapw{flex:1;min-height:0}.tacmap.full .mapbox{height:100%;min-height:0}
@@ -278,6 +278,7 @@ label.popt{cursor:pointer}label.popt:hover{background:var(--hov)}
 <script src="maps.js"></script>
 <script src="directory.js"></script>
 <script src="areamap.js"></script>
+<script src="commute.js"></script>
 <script src="importer.js"></script>
 <script src="claims.js"></script>
 <script src="polls.js"></script>

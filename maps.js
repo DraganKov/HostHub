@@ -138,6 +138,7 @@ function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m
  const box=h("div",{class:"mapbox",role:"region","aria-label":"Map of "+f.name}),ro=h("div",{class:"mapro","aria-live":"off"},["Move the pointer over the map for coordinates"]),bar=h("div",{class:"mapbar"}),
   mapw=h("div",{class:"mapw"},[box,ro]),wrap=h("div",{class:"tacmap"},[mapw,bar]),editing=own&&(fieldMode==="boundary"||(fieldMode==="map"&&cur));
  w.appendChild(h("div",{class:"row",style:"margin:0 0 8px"},[h("button",{class:"chip",onclick:()=>{curField=null;curMap=null;render()}},["All fields"]),h("h2",{style:"margin:0",text:f.name}),f.verified?h("span",{class:"stat good",title:"An admin confirmed this listing is run by its owner",text:"✓ Verified owner"}):null]));
+ if(fieldMode==="view"&&typeof commutePanel==="function"){if(db.me)w.appendChild(commutePanel({key:"f:"+f.id,name:f.name,lat:f.lat,lng:f.lng,start:null}));else w.appendChild(h("div",{class:"row"},[h("button",{class:"chip",type:"button",onclick:need("plan your trip",()=>{})},["When should I leave?"])]))}
  w.appendChild(h("div",{class:"fine",text:(f.kind==="store"?"Store · ":"")+[f.address,f.city,f.code].filter(Boolean).join(", ")}));
  if(f.website&&/^https?:\/\//.test(f.website))w.appendChild(h("div",{class:"fine"},[h("a",{href:f.website,target:"_blank",rel:"noopener noreferrer nofollow",text:f.website.replace(/^https?:\/\/(www\.)?/,"").slice(0,60)})]));
  if(f.source)w.appendChild(h("div",{class:"fine",text:"Listing imported from "+f.source+"."}));
