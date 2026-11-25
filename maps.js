@@ -14,6 +14,8 @@ function loadLeaflet(){if(window.L&&L.Control&&L.Control.Draw)return Promise.res
  const js=u=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=u;if(SRI[u]){s.integrity=SRI[u];s.crossOrigin="anonymous"}s.onload=ok;s.onerror=()=>no(new Error("Could not load the map library."));document.head.appendChild(s)});
  const opt=u=>js(u).catch(()=>null);
  css(LF.css);css(LF.dcss);lfPromise=js(LF.js).then(()=>js(LF.djs)).then(()=>Promise.all([opt(LF.ms),opt(LF.mgrs)])).catch(e=>{lfPromise=null;throw e});return lfPromise}
+/* Keeps a map the right size when its container changes (window resize, rotating a phone, the sidebar opening). */
+const fitOnResize=(map,el)=>{if(typeof ResizeObserver!=="function")return;const ro=new ResizeObserver(()=>{try{map.invalidateSize()}catch(e){}});ro.observe(el);const rm=map.remove;map.remove=function(){ro.disconnect();return rm.apply(this,arguments)}};
 /* Feature kinds. shape: area (polygon), line, point, ring (circle with a radius in metres). */
 const SYM={friendly:"SFGPUCI--------",hostile:"SHGPUCI--------",neutral:"SNGPUCI--------",unknown:"SUGPUCI--------"};
 const KINDS={
@@ -166,7 +168,7 @@ function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m
  /* ---- map ---- */
  box.textContent="Loading map…";
  loadLeaflet().then(async()=>{box.textContent="";
-  const map=L.map(box,{scrollWheelZoom:false}).setView([f.lat,f.lng],15);activeMap=map;
+  const map=L.map(box,{scrollWheelZoom:false}).setView([f.lat,f.lng],15);activeMap=map;fitOnResize(map,box);
   const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}),
    topo=L.tileLayer("https://tile.opentopomap.org/{z}/{x}/{y}.png",{maxZoom:17,attribution:"Map data © OpenStreetMap contributors, SRTM · Style © OpenTopoMap (CC-BY-SA)"}),
    sat=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Imagery © Esri, Maxar, Earthstar Geographics"});

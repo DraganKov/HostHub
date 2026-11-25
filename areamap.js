@@ -38,7 +38,7 @@ function areaMapPanel(getListings,onView){
   navigator.geolocation.getCurrentPosition(p=>{if(map)map.setView([p.coords.latitude,p.coords.longitude],11)},()=>{msg.textContent="Couldn’t get your location. Allow location access, or set your postal code on the Events tab."},{timeout:8000})}));
  box.textContent="Loading map…";
  loadLeaflet().then(()=>{box.textContent="";
-  map=L.map(box,{scrollWheelZoom:false});activeMap=map;
+  map=L.map(box,{scrollWheelZoom:false});activeMap=map;fitOnResize(map,box);
   const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}),
    topo=L.tileLayer("https://tile.opentopomap.org/{z}/{x}/{y}.png",{maxZoom:17,attribution:"Map data © OpenStreetMap contributors, SRTM · Style © OpenTopoMap (CC-BY-SA)"}),
    sat=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Imagery © Esri, Maxar, Earthstar Geographics"});
