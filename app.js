@@ -19,7 +19,7 @@ async function pull(){
  const bad=r.find(x=>x.error);if(bad)throw bad.error;
  const [pr,po,co,fo,gr,gm,li=[],ms=[],nf=[]]=r.map(x=>x.data);
  db.users=pr.map(u=>({id:u.id,name:u.username,bio:u.bio||"",rep:u.rep||0,following:fo.filter(f=>f.follower===u.id).map(f=>f.followee)}));
- db.posts=po.map(p=>({id:p.id,uid:p.user_id,tag:p.tag,text:p.body,t:T(p.created_at),score:p.score||0,my:(li.find(v=>v.post_id===p.id)||{value:0}).value,
+ db.posts=po.map(p=>({id:p.id,uid:p.user_id,tag:p.tag,text:p.body,t:T(p.created_at),score:p.score||0,fid:p.field_id||null,code:p.postal_code||"",lat:p.lat==null?null:p.lat,lng:p.lng==null?null:p.lng,my:(li.find(v=>v.post_id===p.id)||{value:0}).value,
   comments:co.filter(c=>c.post_id===p.id).sort((a,b)=>T(a.created_at)-T(b.created_at)).map(c=>({uid:c.user_id,x:c.body}))}));
  db.teams=gr.map(g=>({id:g.id,name:g.name,about:g.about||"",owner:g.owner,members:gm.filter(m=>m.group_id===g.id).map(m=>m.user_id)}));
  db.msgs=ms.map(m=>({id:m.id,from:m.sender,to:m.recipient,x:m.body,t:T(m.created_at),read:!!m.read_at}));
@@ -116,28 +116,39 @@ function render(){const a=$("#app");a.innerHTML="";drawNav();
 const gateView=m=>h("section",{class:"card",style:"margin-top:24px"},[h("h2",{text:m.label}),h("p",{text:"You need an account to use "+m.label+". Browsing posts, groups, events and maps is open to everyone."}),
  h("div",{class:"row"},[h("button",{class:"btn",onclick:()=>openAuth("use "+m.label,"signup")},["Create account"]),h("button",{class:"chip",onclick:()=>openAuth("use "+m.label,"login")},["Log in"])])]);
 /* ===== Components ===== */
-function postCard(p,again){const own=p.uid===db.me;
+function postCard(p,again,opt){opt=opt||{};const own=p.uid===db.me;
  const vb=(sym,d,label)=>h("button",{class:"vb","aria-label":label,"aria-pressed":String(p.my===d),disabled:own?true:null,title:own?"You can’t vote on your own post":null,onclick:need("vote",()=>{api.vote(p,d);again()})},[sym]);
  const acts=h("div",{class:"acts"},[
   h("span",{class:"vote",role:"group","aria-label":"Vote"},[vb("▲",1,"Upvote"),h("b",{class:"score",text:String(p.score),"aria-label":"Score "+p.score}),vb("▼",-1,"Downvote")]),
   h("button",{class:"act",onclick:()=>{openC[p.id]=!openC[p.id];again()}},["Comments ("+p.comments.length+")"])]);
  if(own){acts.appendChild(h("span",{class:"sp"}));acts.appendChild(h("button",{class:"act",onclick:()=>{api.del(p.id);again()}},["Delete"]))}
- const c=h("article",{class:"card post"},[h("header",{},[avatar(p.uid),h("div",{class:"who"},[nameBtn(p.uid),h("small",{text:ago(p.t)})]),h("span",{class:"sp"}),h("span",{class:"tag",text:p.tag})]),h("p",{class:"body",text:p.text}),acts]);
+ const c=h("article",{class:"card post"},[h("header",{},[avatar(p.uid),h("div",{class:"who"},[nameBtn(p.uid),h("small",{text:ago(p.t)})]),h("span",{class:"sp"}),h("span",{class:"tag",text:p.tag})]),h("p",{class:"body",text:p.text}),p.fid&&!opt.noField?fieldBlock(p):null,acts]);
  if(openC[p.id]){const cs=h("div",{class:"comments"},p.comments.map(m=>h("div",{class:"cm"},[h("b",{text:nameOf(m.uid)+": "}),m.x])));
   const i=h("input",{placeholder:"Add a comment","aria-label":"Comment"}),send=need("comment",()=>{const v=i.value.trim();if(v){api.comment(p,v);again()}});
   i.onkeydown=e=>{if(e.key==="Enter")send()};cs.appendChild(h("div",{class:"cf"},[i,h("button",{class:"btn",onclick:send},["Reply"])]));c.appendChild(cs)}
  return c}
+function fieldBlock(p){const f=(db.fields||[]).find(x=>x.id===p.fid);
+ if(!f)return h("p",{class:"fine",text:"This field is no longer available."});
+ const d=typeof dist==="function"?dist(f):null;
+ return h("div",{class:"row fieldblk"},[h("div",{class:"who"},[f.name,h("small",{text:[f.city,f.code].filter(Boolean).join(", ")+(d!=null?" · "+Math.round(d)+" km away":"")})]),h("span",{class:"sp"}),
+  h("button",{class:"chip",onclick:()=>{curField=f.id;curMap=null;fieldMode="view";go("maps")}},["View map"])])}
+/* A field post the community has downvoted to -5 or below is hidden from everyone except its owner and admins. */
+const hiddenPost=p=>!!p.fid&&p.score<=-5&&p.uid!==db.me&&!(db.isAdmin);
 const teamCard=(t,again)=>{const m=t.members.includes(db.me);
  return h("article",{class:"card"},[h("div",{class:"row",style:"margin:0"},[h("div",{class:"who"},[t.name,h("small",{text:t.members.length+(t.members.length===1?" member":" members")})]),h("span",{class:"sp"}),
   h("button",{class:m?"chip":"btn",onclick:need("join groups",()=>{api.join(t);again()})},[m?"Leave":"Join"])]),h("p",{class:"body",text:t.about}),h("div",{class:"row"},t.members.map(nameBtn))])};
-const postList=(box,get)=>{const d=()=>{box.innerHTML="";const ps=get().sort((a,b)=>b.t-a.t);if(!ps.length)box.appendChild(empty("No posts here yet."));ps.forEach(p=>box.appendChild(postCard(p,d)))};d()};
+const postList=(box,get)=>{const d=()=>{box.innerHTML="";const ps=get().filter(p=>!hiddenPost(p)).sort((a,b)=>b.t-a.t);if(!ps.length)box.appendChild(empty("No posts here yet."));ps.forEach(p=>box.appendChild(postCard(p,d)))};d()};
 const guestBanner=()=>h("section",{class:"card"},[h("div",{class:"who"},["You’re browsing as a guest"]),h("p",{class:"fine",text:"Create an account to post, vote, comment, join groups and register for events. Your email is never shown to other people."}),
  h("div",{class:"row"},[h("button",{class:"btn",onclick:()=>openAuth("",  "signup")},["Create account"]),h("button",{class:"chip",onclick:()=>openAuth("","login")},["Log in"])])]);
 /* ===== Views ===== */
-registerView("feed","Feed",()=>{let tag=TAGS[0],flt="All";const w=h("div"),ta=h("textarea",{placeholder:"What’s on your mind? Share an update, ask a question, or organize a meetup.","aria-label":"Post text"}),
+registerView("feed","Feed",()=>{let tag=TAGS[0],flt="All",area="all";const w=h("div"),ta=h("textarea",{placeholder:"What’s on your mind? Share an update, ask a question, or organize a meetup.","aria-label":"Post text"}),
  cnt=h("span",{class:"count",text:"0 / "+MAX}),go2=h("button",{class:"btn",disabled:true},["Post"]),picks=h("div",{class:"row"}),fl=h("div",{class:"filters"}),list=h("div");
  const dp=()=>{picks.innerHTML="";TAGS.forEach(t=>picks.appendChild(chip(t,t===tag,()=>{tag=t;dp()})))};
- const dl=()=>postList(list,()=>db.posts.filter(p=>flt==="All"||p.tag===flt)),df=()=>{fl.innerHTML="";["All",...TAGS].forEach(t=>fl.appendChild(chip(t,t===flt,()=>{flt=t;df();dl()})))};
+ const near=p=>{if(area!=="near"||!Loc.has())return true;if(p.lat==null)return false;return Loc.radius<=0||Geo.km(Loc.lat,Loc.lng,p.lat,p.lng)<=Loc.radius},
+  dl=()=>postList(list,()=>db.posts.filter(p=>(flt==="All"||p.tag===flt)&&near(p))),
+  df=()=>{fl.innerHTML="";["All",...TAGS,"Field"].forEach(t=>fl.appendChild(chip(t,t===flt,()=>{flt=t;df();dl()})));
+   fl.appendChild(h("span",{class:"sp"}));fl.appendChild(chip("Everywhere",area==="all",()=>{area="all";df();dl()}));
+   fl.appendChild(chip(Loc.has()?"Near "+Loc.label()+" ("+(Loc.radius>0?Loc.radius+" km":"anywhere")+")":"Near me",area==="near",()=>{if(!Loc.has()){flash("Set your postal or ZIP code on the Events tab first.");go("events");return}area="near";df();dl()}))};
  ta.oninput=()=>{const n=ta.value.length;cnt.textContent=n+" / "+MAX;cnt.className="count"+(n>MAX?" over":"");go2.disabled=!ta.value.trim()||n>MAX};
  go2.onclick=()=>{api.addPost(tag,ta.value.trim());ta.value="";ta.oninput();dl()};
  w.appendChild(db.me?h("section",{class:"card"},[ta,picks,h("div",{class:"row"},[cnt,h("span",{class:"sp"}),go2])]):guestBanner());dp();df();dl();w.appendChild(fl);w.appendChild(list);return w},{pos:10});

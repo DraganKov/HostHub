@@ -88,25 +88,27 @@ Object.assign(api,{
  async createMap(fid,name,notes){const id=rid(),r=await sb.from("field_maps").insert({id,field_id:fid,name,notes});if(r.error)return{error:/duplicate|unique/i.test(r.error.message)?"This field already has a game mode with that name.":r.error.message};await pull();return{id}},
  async saveMapGeo(id,gj){const r=await sb.from("field_maps").update({geojson:gj}).eq("id",id);if(r.error)return r.error.message;geoCache["m"+id]=gj;return null},
  async deleteMap(id){const r=await sb.from("field_maps").delete().eq("id",id);if(r.error)return r.error.message;await pull();return null},
+ async publishField(id){const r=await sb.rpc("publish_field",{p_field:id});if(r.error)return r.error.message;await pull();return null},
+ async reviewField(id,action){const r=await sb.rpc("review_field",{p_field:id,p_action:action});if(r.error)return r.error.message;await pull();return null},
  async deleteField(id){const r=await sb.from("fields").delete().eq("id",id);if(r.error)return r.error.message;await pull();return null}
 });
 /* ===== Views ===== */
 function fieldCard(f){const n=db.maps.filter(m=>m.fieldId===f.id).length,d=dist(f);
- return h("button",{class:"card thr fcard",onclick:()=>{curField=f.id;curMap=null;fieldMode="view";render()}},[h("div",{class:"who"},[f.name,h("small",{text:[f.city,f.code].filter(Boolean).join(", ")+(d!=null?" · "+Math.round(d)+" km away":"")+" · "+n+(n===1?" game mode":" game modes")})])])}
+ return h("button",{class:"card thr fcard",onclick:()=>{curField=f.id;curMap=null;fieldMode="view";render()}},[h("div",{class:"who"},[f.name,h("small",{text:(!f.published?"DRAFT · ":fieldHidden(f)?"HIDDEN BY VOTES · ":"")+[f.city,f.code].filter(Boolean).join(", ")+(d!=null?" · "+Math.round(d)+" km away":"")+" · "+n+(n===1?" game mode":" game modes")})])])}
 function fieldForm(done){const nm=h("input",{"aria-label":"Field name",maxlength:"80",placeholder:"Field name"}),ab=h("textarea",{"aria-label":"About the field",maxlength:"1000",placeholder:"Terrain, rules, parking, what to bring"}),
  pc=h("input",{"aria-label":"Postal code",placeholder:"L6H 0A1 or 90210",maxlength:"10"}),err=h("p",{class:"err",role:"alert"});
  const b=h("button",{class:"btn",onclick:async()=>{err.textContent="";const name=nm.value.trim();if(name.length<2){err.textContent="Give the field a name.";return}
   let g;try{b.disabled=true;g=await Geo.geocode(pc.value)}catch(e){err.textContent=e.message;b.disabled=false;return}
   const r=await api.createField({name,about:ab.value.trim(),code:g.code,city:g.city,lat:g.lat,lng:g.lng});b.disabled=false;
-  if(r.error){err.textContent="Could not add the field. "+r.error;return}curField=r.id;fieldMode="view";fieldFormOpen=false;flash("Field added. Draw its boundary next.");render()}},["Add field"]);
- return h("section",{class:"card"},[h("div",{class:"who"},["Add your field"]),h("p",{class:"fine",text:"You’ll be the field owner: you can draw the playing area, create game-mode maps, and host events here."}),field("Name",nm),field("About",ab),field("Postal or ZIP code",pc),err,
+  if(r.error){err.textContent="Could not add the field. "+r.error;return}curField=r.id;curMap=null;fieldMode="boundary";fieldFormOpen=false;flash("Saved as a draft. Draw the playing area, then publish.");render()}},["Add field"]);
+ return h("section",{class:"card"},[h("div",{class:"who"},["Add your field"]),h("p",{class:"fine",text:"You’ll be the field owner. Next you’ll draw the playing area and can add game-mode maps. Nothing is public until you publish, which posts the field to the feed for your postal or ZIP code."}),field("Name",nm),field("About",ab),field("Postal or ZIP code",pc),err,
   h("div",{class:"row",style:"margin-top:0"},[b,h("button",{class:"chip",onclick:done},["Cancel"])])])}
 registerView("maps","Maps",()=>{if(activeMap){try{activeMap.remove()}catch(e){}activeMap=null}
  const f=db.fields.find(x=>x.id===curField);if(f)return fieldView(f);
  const w=h("div"),list=h("div"),tx=h("input",{"aria-label":"Search fields",placeholder:"Search fields by name or city",value:fieldQ});
  const dl=()=>{list.innerHTML="";const s=fieldQ.trim().toLowerCase();
   let l=db.fields.filter(x=>!s||(x.name+" "+x.city+" "+x.about).toLowerCase().includes(s));
-  if(Loc.has()&&Loc.radius>0&&!s)l=l.filter(x=>dist(x)<=Loc.radius);
+  if(Loc.has()&&Loc.radius>0&&!s)l=l.filter(x=>dist(x)<=Loc.radius||x.owner===db.me);
   l=l.sort((a,b)=>(dist(a)??1e9)-(dist(b)??1e9)||a.name.localeCompare(b.name));
   if(!l.length)list.appendChild(empty(Loc.has()&&Loc.radius>0&&!s?"No fields within "+Loc.radius+" km of "+Loc.label()+". Change your area on the Events tab, or search by name.":"No fields yet. Field owners can add theirs above."));
   l.forEach(x=>list.appendChild(fieldCard(x)))};
@@ -122,6 +124,22 @@ function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m
  w.appendChild(h("div",{class:"row",style:"margin-top:0"},[h("small",{class:"fine",text:"Run by "}),nameBtn(f.owner)]));
  if(f.about)w.appendChild(h("p",{class:"body",text:f.about}));
  w.appendChild(h("div",{class:"filters"},[chip("Playing area",!cur,()=>{curMap=null;fieldMode="view";render()}),...maps.map(m=>chip(m.name,curMap===m.id,()=>{curMap=m.id;fieldMode="view";render()}))]));
+ const setup=h("div");
+ const hasB=b=>!!(b&&b.features&&b.features.length);
+ const step=(n,done,title,detail,action)=>h("div",{class:"row step"},[h("span",{class:"stat"+(done?" good":""),text:done?"✓":String(n)}),h("div",{class:"who"},[title,h("small",{text:detail})]),h("span",{class:"sp"}),action]);
+ const drawSetup=b=>{setup.innerHTML="";if(!own||f.published||editing)return;
+  const ok=hasB(b),nm=maps.length,pubErr=h("p",{class:"err",role:"alert"}),pb=h("button",{class:"btn",disabled:ok?null:true,onclick:async()=>{pubErr.textContent="";pb.disabled=true;const e=await api.publishField(f.id);if(e){pubErr.textContent=e;pb.disabled=false;return}flash("Published. It’s now in the feed for "+(f.code||"your area")+".");render()}},["Publish field"]);
+  setup.appendChild(h("section",{class:"card"},[h("div",{class:"who"},["Set up your field",h("small",{text:"Draft: only you can see it until you publish."})]),
+   step(1,true,"Field details",[f.city,f.code].filter(Boolean).join(", "),null),
+   step(2,ok,"Playing area",ok?"Drawn":"Required. Draw it on the map or import a KML or GeoJSON file.",h("button",{class:ok?"chip":"btn",onclick:()=>{fieldMode="boundary";curMap=null;render()}},[ok?"Edit":"Start drawing"])),
+   step(3,nm>0,"Game mode maps",nm?nm+(nm===1?" added":" added"):"Optional. Add objectives, spawns, zones and range rings for each game mode below.",null),
+   h("p",{class:"fine",text:"Publishing posts this field to the feed for "+(f.code||"your area")+" and nearby. Members can upvote or downvote it, and a field that reaches −5 is hidden from everyone except you and admins."}),
+   pubErr,pb]))};
+ w.appendChild(setup);api.fieldBoundary(f.id).then(drawSetup).catch(()=>drawSetup(null));
+ if(fieldHidden(f)&&(own||db.isAdmin)){const hb=h("section",{class:"card"},[h("div",{class:"who"},["Hidden by community votes",h("small",{text:"Its score is "+fieldScore(f)+". Only you and admins can see this field."})])]);
+  if(db.isAdmin){const er=h("p",{class:"err",role:"alert"});hb.appendChild(h("div",{class:"row"},[h("button",{class:"btn",onclick:async()=>{const e=await api.reviewField(f.id,"restore");if(e)er.textContent=e;else{flash("Restored");render()}}},["Restore it"]),
+    (()=>{const b=h("button",{class:"chip",onclick:async()=>{if(!b.dataset.arm){b.dataset.arm=1;b.textContent="Click again to remove permanently";return}const e=await api.reviewField(f.id,"remove");if(e)er.textContent=e;else{curField=null;render()}}},["Remove permanently"]);return b})()]));hb.appendChild(er)}
+  w.appendChild(hb)}
  w.appendChild(wrap);w.appendChild(msg);
  if(cur&&cur.notes)w.appendChild(h("p",{class:"fine",text:cur.notes}));
  const tools=h("div"),legend=h("div",{class:"row legend"},Object.values(KINDS).map(k=>h("span",{class:"stat",style:"border-color:"+k.color+";color:inherit"},[h("i",{class:"sw",style:"background:"+k.color}),k.label])));
@@ -200,12 +218,16 @@ function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m
   if(cur)dz.appendChild(two("Delete “"+cur.name+"”",async()=>{const e=await api.deleteMap(cur.id);if(e)flash(e);else{curMap=null;render()}}));
   dz.appendChild(two("Delete this field",async()=>{const e=await api.deleteField(f.id);if(e)flash(e);else{curField=null;curMap=null;render()}}));
   t.appendChild(dz);w.appendChild(t)}
+ const rp=f.published&&db.posts.find(p=>p.id===f.postId);
+ if(rp){w.appendChild(h("h2",{text:"Community rating"}));w.appendChild(h("p",{class:"fine",text:"Upvote fields that are real and accurate. Downvote spam or misleading ones. At −5 a field is hidden."}));w.appendChild(postCard(rp,render,{noField:true}))}
  const up=db.events.filter(e=>e.fieldId===f.id&&!e.cancelled&&e.start>Date.now()-36e5).sort((a,b)=>a.start-b.start);
  w.appendChild(h("h2",{text:"Upcoming events here"}));
  if(!up.length)w.appendChild(empty(own?"No events yet. Host one from the Events tab and pick this field.":"No upcoming events at this field."));
  up.forEach(e=>w.appendChild(eventCard(e,render)));
  return w}
 const bnd0=f=>geoCache["b"+f.id];
+const fieldScore=f=>{const p=db.posts.find(x=>x.id===f.postId);return p?p.score:0};
+const fieldHidden=f=>f.published&&!f.reviewed&&fieldScore(f)<=-5;
 /* ===== Drawing editor (field owners) ===== */
 function shapeOfLayer(l,type){if(type==="polygon"||type==="rectangle")return"area";if(type==="polyline")return"line";if(type==="marker")return"point";if(type==="circle")return"ring";
  if(L.Circle&&l instanceof L.Circle)return"ring";
