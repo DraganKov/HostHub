@@ -254,6 +254,16 @@ label.popt{cursor:pointer}label.popt:hover{background:var(--hov)}
 .pset select,.pset input[type="datetime-local"]{margin-bottom:4px}
 .pprev{border:1px dashed var(--line);border-radius:12px;padding:6px 14px 10px;margin-top:8px}
 @media(prefers-reduced-motion:reduce){.pbar{transition:none}}
+/* ===== Rules, rules check, registration form, event map ===== */
+.rules{margin:8px 0;border:1px solid var(--line,#8884);border-radius:8px;padding:8px 12px}
+.rules summary{cursor:pointer;font-weight:600}
+.rules ol{margin:8px 0 0;padding-left:20px}.rules li{margin:6px 0}
+.rulesed{border-top:1px solid var(--line,#8884);margin-top:12px;padding-top:12px}
+.rule{border:1px solid var(--line,#8884);border-radius:8px;padding:10px;margin:8px 0}
+.rq{margin-top:6px}.rq summary{cursor:pointer;font-size:.9em}
+.quiz{margin-top:10px}.quizq{border:1px solid var(--line,#8884);border-radius:8px;margin:8px 0;padding:8px 12px}
+.quizq legend{font-weight:600;padding:0 4px}label.fld.opt{display:flex;flex-direction:row;gap:10px;align-items:center;justify-content:flex-start;text-align:left;margin:6px 0;cursor:pointer}.opt input{width:auto;flex:none;margin:0}
+.regform{margin-top:10px}.evmapw{margin-top:10px}.evmap{min-height:260px}
 </style>
 </head>
 <body>
@@ -263,6 +273,8 @@ label.popt{cursor:pointer}label.popt:hover{background:var(--hov)}
 <script src="config.js"></script>
 <script src="app.js"></script>
 <script src="events.js"></script>
+<script src="rules.js"></script>
+<script src="eventmap.js"></script>
 <script src="maps.js"></script>
 <script src="importer.js"></script>
 <script src="claims.js"></script>

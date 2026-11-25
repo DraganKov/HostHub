@@ -34,3 +34,13 @@ Usernames only. Email, phone and home postal code are private to the account. Al
 - Email/SMS alerts: deploy `supabase/functions/notify-upcoming-events` (scaffold, untested) with Resend/Twilio secrets.
 - Payments: prepay is tracking only; hosts mark attendees paid after e-transfer or similar. No payment processor is wired in.
 - Geocoding covers Canadian and US postal codes only.
+
+## Events, registration, rules and event maps
+
+- **Hosting:** create, edit, duplicate, cancel, reopen and delete events. Location and field are fixed once an event exists. Everyone registered or waitlisted is notified when the time, place or title changes, or the event is cancelled or reopened.
+- **Registration:** choose a group size (1 to 10) and add a note. When an event is full, people join a waitlist. They move up automatically, oldest first, when a spot opens or the host raises the capacity. People can edit or cancel their registration.
+- **Host tools:** attendee list with group size and notes, paid and check-in toggles, waitlist, remove, and a CSV export with usernames only.
+- **Rules:** start from a template (open play, milsim, CQB, new players) or write your own. Every rule can carry a quiz question.
+- **Rules check (optional):** when the host turns it on, each person answers 3 randomly picked multiple-choice questions before they can register or join the waitlist. Answers are graded in the database (`get_event_quiz`, `submit_event_quiz`) and never reach the browser. Every try gets new questions, and tries are limited per hour.
+- **Event map:** the field's playing area and the event's game-mode map on OpenStreetMap, with KML export for ATAK and Google Earth, GeoJSON export, and directions on OpenStreetMap.
+- Migrations `0012_events_registrations_crud.sql` and `0013_rules_and_quiz.sql`.
