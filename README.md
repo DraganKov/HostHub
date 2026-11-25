@@ -10,6 +10,9 @@ Built entirely on open source: Supabase (Postgres, Auth, Realtime), Leaflet and 
 3. Put your project URL and anon key in `config.js`.
 4. Serve the folder from any static host: GitHub Pages, or a field owner's own machine (`python3 -m http.server`).
 
+## Maps
+Field owners draw the playing area and any number of game-mode layers: zones, out-of-bounds areas, routes, phase lines, range rings, objectives, spawns and NATO-style unit symbols (milsymbol). Viewers get street, topo and satellite basemaps, a measure tool, live lat/lng and MGRS (mgrs) readout, find-me, full screen, and KML/GeoJSON export. KML opens in ATAK and Google Earth; owners can import KML or GeoJSON.
+
 ## Privacy
 Usernames only. Email, phone and home postal code are private to the account. Alert settings are visible only to their owner.
 
