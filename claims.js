@@ -38,5 +38,5 @@ function claimQueue(){const pend=db.claims.filter(c=>c.status==="pending");
   card.appendChild(h("div",{class:"claim"},[h("div",{class:"row",style:"margin:6px 0 0"},[h("div",{class:"who"},[f?f.name:"Removed listing",h("small",{text:(f?[f.city,f.code].filter(Boolean).join(", ")+" · ":"")+"claimed by "+nameOf(c.by)+" · "+ago(c.t)})]),h("span",{class:"sp"}),
     f?h("button",{class:"chip",onclick:()=>{curField=f.id;curMap=null;fieldMode="view";go("maps")}},["Open"]):null]),
    h("p",{class:"body",text:c.msg}),c.url&&/^https?:\/\//.test(c.url)?h("p",{class:"fine"},[h("a",{href:c.url,target:"_blank",rel:"noopener noreferrer nofollow",text:c.url.slice(0,80)})]):null,
-   note,h("div",{class:"row"},[two("Approve",true,"btn"),two("Decline",false,"chip")]),er]))});
+   reveal("claimnote:"+c.id,"Add a note for the claimant",()=>note,{focus:"input",hide:"Remove note"}),h("div",{class:"row"},[two("Approve",true,"btn"),two("Decline",false,"chip")]),er]))});
  return card}

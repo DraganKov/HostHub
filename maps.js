@@ -122,7 +122,7 @@ registerView("maps","Maps",()=>{if(activeMap){try{activeMap.remove()}catch(e){}a
   let l=db.fields.filter(match);
   if(mapOnly&&am)l=am.inView(l);else if(Loc.has()&&Loc.radius>0&&!s)l=l.filter(x=>dist(x)<=Loc.radius||x.owner===db.me);
   l=l.sort((a,b)=>(dist(a)??1e9)-(dist(b)??1e9)||a.name.localeCompare(b.name));
-  status.textContent=mapOnly&&am?l.length+" listed in the current map view.":"";
+  status.textContent=(mapOnly&&am?l.length+" listed in the current map view. ":"")+(s?"Matching “"+fieldQ.trim()+"”.":"");
   if(!l.length)list.appendChild(empty(mapOnly&&am?"Nothing in this part of the map. Zoom out or drag the map.":Loc.has()&&Loc.radius>0&&!s?"No fields within "+Loc.radius+" km of "+Loc.label()+". Change your area on the Events tab, or search by name.":"No fields yet. Field owners can add theirs above."));
   l.forEach(x=>list.appendChild(fieldCard(x)));if(am)am.refresh()};
  tx.oninput=()=>{fieldQ=tx.value;dl()};
@@ -133,7 +133,7 @@ registerView("maps","Maps",()=>{if(activeMap){try{activeMap.remove()}catch(e){}a
  if(db.isAdmin&&typeof claimQueue==="function"&&db.claims.some(c=>c.status==="pending"))w.appendChild(claimQueue());
  if(db.isAdmin&&typeof importCard==="function")w.appendChild(importCard());
  const mo=h("div",{class:"row"});const mc=()=>{mo.innerHTML="";if(am)mo.appendChild(chip("Only list what’s on the map",mapOnly,()=>{mapOnly=!mapOnly;mc();dl()}))};mc();
- w.appendChild(tx);w.appendChild(kf);w.appendChild(mo);w.appendChild(status);dl();w.appendChild(list);return w},{pos:40});
+ w.appendChild(reveal("mapsearch","Search listings",()=>h("div",{class:"row"},[tx]),{focus:"input",hide:"Hide search"}));w.appendChild(kf);w.appendChild(mo);w.appendChild(status);dl();w.appendChild(list);return w},{pos:40});
 function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m=>m.fieldId===f.id),msg=h("p",{class:"err",role:"alert"}),cur=maps.find(m=>m.id===curMap);
  const box=h("div",{class:"mapbox",role:"region","aria-label":"Map of "+f.name}),ro=h("div",{class:"mapro","aria-live":"off"},["Move the pointer over the map for coordinates"]),bar=h("div",{class:"mapbar"}),
   mapw=h("div",{class:"mapw"},[box,ro]),wrap=h("div",{class:"tacmap"},[mapw,bar]),editing=own&&(fieldMode==="boundary"||(fieldMode==="map"&&cur));
@@ -231,9 +231,9 @@ function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m
   if(cur)row.appendChild(h("button",{class:"btn",onclick:()=>{fieldMode="map";render()}},["Edit “"+cur.name+"” map"]));
   t.appendChild(row);
   const nn=h("input",{"aria-label":"New game mode name",maxlength:"60",placeholder:"New game mode, e.g. Search and Destroy"}),nt=h("input",{"aria-label":"Game mode notes",maxlength:"500",placeholder:"Notes (optional)"}),e2=h("p",{class:"err",role:"alert"});
-  t.appendChild(h("div",{class:"who",style:"margin-top:12px"},["Add a game mode map"]));t.appendChild(nn);t.appendChild(nt);t.appendChild(e2);
-  t.appendChild(h("button",{class:"chip",onclick:async()=>{e2.textContent="";const n=nn.value.trim();if(!n){e2.textContent="Name the game mode.";return}
-   const r=await api.createMap(f.id,n,nt.value.trim());if(r.error){e2.textContent=r.error;return}curMap=r.id;fieldMode="map";render()}},["Create game mode"]));
+  t.appendChild(reveal("gamemode:"+f.id,"Add a game mode map",()=>h("div",{},[nn,nt,e2,
+   h("button",{class:"chip",onclick:async()=>{e2.textContent="";const n=nn.value.trim();if(!n){e2.textContent="Name the game mode.";return}
+    const r=await api.createMap(f.id,n,nt.value.trim());if(r.error){e2.textContent=r.error;return}curMap=r.id;fieldMode="map";render()}},["Create game mode"])]),{focus:"input",hide:"Cancel"}));
   const two=(label,fn)=>{const b=h("button",{class:"chip",onclick:async()=>{if(b.dataset.arm){await fn()}else{b.dataset.arm=1;b.textContent="Click again to confirm"}}},[label]);return b};
   const dz=h("div",{class:"row"});
   if(cur)dz.appendChild(two("Delete “"+cur.name+"”",async()=>{const e=await api.deleteMap(cur.id);if(e)flash(e);else{curMap=null;render()}}));

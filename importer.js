@@ -55,4 +55,5 @@ function importCard(){const err=h("p",{class:"err",role:"alert"}),out=h("div",{c
    importMsg="Done: "+tot.inserted+" imported, "+tot.duplicates+" already listed, "+tot.skipped+" skipped.";out.textContent=importMsg;await pull();render()}catch(e){err.textContent=e.message}
   ib.textContent="Import";delete ib.dataset.arm;ib.disabled=false}},["Import"]);
  ta.oninput=()=>{ib.dataset.arm="";delete ib.dataset.arm;ib.textContent="Import";preview()};
- return h("section",{class:"card"},[h("div",{class:"who"},["Import fields and stores (admin)",h("small",{text:"Imported listings go live right away, credited to the source name, with no feed post."})]),field("Source name",src),ta,h("div",{class:"row"},[h("label",{class:"fine"},["Or choose a file: ",file])]),out,err,ib])}
+ return h("section",{class:"card"},[h("div",{class:"who"},["Import fields and stores (admin)",h("small",{text:"Imported listings go live right away, credited to the source name, with no feed post."})]),
+  reveal("import","Import listings",()=>h("div",{},[field("Source name",src),ta,h("div",{class:"row"},[h("label",{class:"fine"},["Or choose a file: ",file])]),out,err,ib]),{hide:"Cancel"})])}

@@ -18,9 +18,9 @@ registerView("finances","Finances",()=>{const w=h("div"),L=db.ledger,sum=k=>L.fi
  if(db.isAdmin){const kind=h("select",{"aria-label":"Type"},[h("option",{value:"donation",text:"Donation received"}),h("option",{value:"expense",text:"Expense paid"})]),
    amt=h("input",{type:"number",min:"0.01",step:"0.01","aria-label":"Amount",placeholder:"Amount (CAD)"}),cat=h("input",{"aria-label":"Category",maxlength:"40",placeholder:"Category, e.g. hosting"}),
    ds=h("input",{"aria-label":"Description",maxlength:"200",placeholder:"Description"}),day=h("input",{type:"date","aria-label":"Date",value:new Date().toISOString().slice(0,10)}),err=h("p",{class:"err",role:"alert"});
-  w.appendChild(h("section",{class:"card"},[h("div",{class:"who"},["Add an entry (admin)"]),h("div",{class:"grid2",style:"margin-top:8px"},[kind,amt]),h("div",{class:"grid2"},[cat,day]),ds,err,
+  w.appendChild(reveal("ledger","Add an entry",()=>h("section",{class:"card"},[h("div",{class:"who"},["Add an entry (admin)"]),h("div",{class:"grid2",style:"margin-top:8px"},[kind,amt]),h("div",{class:"grid2"},[cat,day]),ds,err,
    h("button",{class:"btn",onclick:async()=>{err.textContent="";const c=Math.round(parseFloat(amt.value)*100);if(!(c>0)){err.textContent="Enter an amount above zero.";return}if(!ds.value.trim()){err.textContent="Add a short description.";return}
-    const e=await api.addLedger({kind:kind.value,cents:c,cat:cat.value.trim(),desc:ds.value.trim(),day:day.value});if(e){err.textContent="Could not save. "+e;return}flash("Entry added");render()}},["Add entry"])]))}
+    const e=await api.addLedger({kind:kind.value,cents:c,cat:cat.value.trim(),desc:ds.value.trim(),day:day.value});if(e){err.textContent="Could not save. "+e;return}flash("Entry added");openBox.ledger=false;render()}},["Add entry"])]),{primary:true,hide:"Cancel"}))}
  const months={};L.forEach(x=>{const k=x.day.slice(0,7);const m=months[k]=months[k]||{d:0,e:0};x.kind==="donation"?m.d+=x.cents:m.e+=x.cents});
  const ks=Object.keys(months).sort().reverse();
  if(ks.length){w.appendChild(h("h2",{text:"By month"}));

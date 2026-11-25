@@ -34,7 +34,7 @@ function dirListings(){const w=h("div"),list=h("div"),status=h("p",{class:"fine"
   const s=dirText.trim().toLowerCase();if(s)l=l.filter(f=>(f.name+" "+f.city+" "+f.province+" "+f.address).toLowerCase().includes(s));
   const near=dirSort==="near"&&Loc.has();
   l.sort(near?(a,b)=>dist(a)-dist(b):(a,b)=>a.name.localeCompare(b.name));
-  status.textContent=l.length+" listing"+(l.length===1?"":"s")+(dirSort==="near"&&!Loc.has()?". Set your postal code on the Events tab to sort by distance.":"")+".";
+  status.textContent=l.length+" listing"+(l.length===1?"":"s")+(s?" matching “"+dirText.trim()+"”":"")+(dirSort==="near"&&!Loc.has()?". Set your postal code on the Events tab to sort by distance.":"")+".";
   if(!l.length)list.appendChild(empty(db.fields.length?"No listings match. Try different filters or add it yourself.":"No listings yet."));
   l.slice(0,dirShow).forEach(f=>list.appendChild(dirCard(f)));
   if(l.length>dirShow)list.appendChild(h("div",{class:"row"},[h("button",{class:"chip",type:"button",onclick:()=>{dirShow+=30;draw()}},["Show "+Math.min(30,l.length-dirShow)+" more"])]))};
@@ -44,7 +44,7 @@ function dirListings(){const w=h("div"),list=h("div"),status=h("p",{class:"fine"
  const chips=h("div",{class:"row"});
  const cs=()=>{chips.innerHTML="";[["all","all","All"],["field","all","Fields"],["field","outdoor","Outdoor"],["field","indoor","Indoor"],["store","all","Stores"]].forEach(([k,v,t])=>chips.appendChild(chip(t,dirKind===k&&dirVenue===v,()=>{dirKind=k;dirVenue=v;dirShow=30;cs();draw()})));
   if(db.me)chips.appendChild(chip("My listings",dirMine,()=>{dirMine=!dirMine;dirShow=30;cs();draw()}))};cs();
- w.appendChild(h("div",{class:"row"},[q]));w.appendChild(h("div",{class:"row"},[prov,sort]));w.appendChild(chips);w.appendChild(status);
+ w.appendChild(reveal("dirsearch","Search and filter",()=>h("div",{},[h("div",{class:"row"},[q]),h("div",{class:"row"},[prov,sort])]),{focus:"input",hide:"Hide search"}));w.appendChild(chips);w.appendChild(status);
  if(dirAdd&&db.me)w.appendChild(listingForm(null));
  w.appendChild(list);draw();return w}
 function dirCard(f){

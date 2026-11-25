@@ -8,7 +8,7 @@ profileSections.push(function settingsCard(){const s=db.settings||{},err=h("p",{
   ph=h("input",{"aria-label":"Mobile number",placeholder:"+14165551234",inputmode:"tel",maxlength:"16",value:s.phone||""});
  return h("section",{class:"card"},[h("div",{class:"who"},["Your area and event alerts"]),
   h("p",{class:"fine",text:"Only you can see this. Your postal code is used to find events near you; it is never shown to anyone else, and neither is your email or phone number."}),
-  field("Home postal or ZIP code",pc),h("div",{class:"grid2"},[field("Distance",rad),field("Alert me",days)]),
+  reveal("settings","Change area and alerts",()=>h("div",{},[field("Home postal or ZIP code",pc),h("div",{class:"grid2"},[field("Distance",rad),field("Alert me",days)]),
   h("label",{class:"fld"},[em," Email me about events near me"]),h("label",{class:"fld"},[sm," Text me about events near me"]),field("Mobile number (international format, only used for text alerts)",ph),err,
   h("p",{class:"fine",text:"Heads up: your choices are saved now, but this site can only deliver email and text alerts once whoever runs it connects a mail and SMS provider. Until then you’ll still see events near you on the Events tab."}),
   h("button",{class:"btn",onclick:async()=>{err.textContent="";let g={code:null,lat:null,lng:null,city:""};
@@ -17,4 +17,4 @@ profileSections.push(function settingsCard(){const s=db.settings||{},err=h("p",{
    if(sm.checked&&!phone){err.textContent="Add a mobile number to get text alerts.";return}
    const e=await api.saveSettings({code:g.code,lat:g.lat,lng:g.lng,radius:parseInt(rad.value),email:em.checked,sms:sm.checked,phone:phone||null,days:parseInt(days.value)});
    if(e){err.textContent="Could not save. "+e;return}
-   if(g.code){Object.assign(Loc,{code:g.code,lat:g.lat,lng:g.lng,city:g.city,radius:parseInt(rad.value)});Loc.save()}flash("Saved");render()}},["Save"])])});
+   if(g.code){Object.assign(Loc,{code:g.code,lat:g.lat,lng:g.lng,city:g.city,radius:parseInt(rad.value)});Loc.save()}flash("Saved");openBox.settings=false;render()}},["Save"])]),{hide:"Cancel"})])});

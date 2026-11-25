@@ -87,6 +87,15 @@ const h=(tag,p,kids)=>{const e=document.createElement(tag);
 const ago=t=>{const m=Math.max(1,Math.round((Date.now()-t)/6e4));if(m<60)return m+" min ago";const x=Math.round(m/60);return x<24?x+" h ago":Math.round(x/24)+" d ago"};
 const empty=t=>h("div",{class:"empty",text:t});
 const chip=(l,on,fn)=>h("button",{class:"chip",type:"button","aria-pressed":String(on),onclick:fn},[l]);
+/* Keeps forms and input boxes out of the way until someone asks for them. The panel is built once and then shown or hidden,
+   so what you typed survives opening and closing. Open or closed is remembered by key while you move around. */
+const openBox={};
+function reveal(key,label,build,o){o=o||{};const w=h("div",{class:"reveal"});let node=null;if(openBox[key]===undefined)openBox[key]=!!o.open;
+ const draw=()=>{w.innerHTML="";const on=!!openBox[key];
+  const b=h("button",{class:o.primary?"btn":"chip",type:"button","aria-expanded":String(on),onclick:()=>{openBox[key]=!openBox[key];draw();if(openBox[key]&&o.focus){const f=w.querySelector(o.focus);if(f)f.focus()}}},[on?(o.hide||"Hide"):label]);
+  w.appendChild(h("div",{class:"row"},[b]));
+  if(on){node=node||build(()=>{openBox[key]=false;draw()});w.appendChild(node)}};
+ draw();return w}
 const field=(label,input)=>h("label",{class:"fld"},[h("span",{text:label}),input]);
 const nameOf=id=>(api.user(id)||{name:"Unknown"}).name;
 const avatar=id=>h("div",{class:"av"},[nameOf(id).charAt(0).toUpperCase()]);
@@ -140,7 +149,7 @@ function postCard(p,again,opt){opt=opt||{};const own=p.uid===db.me;
  const c=h("article",{class:"card post"},[h("header",{},[avatar(p.uid),h("div",{class:"who"},[nameBtn(p.uid),h("small",{text:ago(p.t)})]),h("span",{class:"sp"}),h("span",{class:"tag",text:p.tag})]),h("p",{class:"body",text:p.text}),p.fid&&!opt.noField?fieldBlock(p):null,acts]);
  if(openC[p.id]){const cs=h("div",{class:"comments"},p.comments.map(m=>h("div",{class:"cm"},[h("b",{text:nameOf(m.uid)+": "}),m.x])));
   const i=h("input",{placeholder:"Add a comment","aria-label":"Comment"}),send=need("comment",()=>{const v=i.value.trim();if(v){api.comment(p,v);again()}});
-  i.onkeydown=e=>{if(e.key==="Enter")send()};cs.appendChild(h("div",{class:"cf"},[i,h("button",{class:"btn",onclick:send},["Reply"])]));c.appendChild(cs)}
+  i.onkeydown=e=>{if(e.key==="Enter")send()};cs.appendChild(reveal("cm:"+p.id,"Add a comment",()=>h("div",{class:"cf"},[i,h("button",{class:"btn",onclick:send},["Reply"])]),{focus:"input",hide:"Cancel"}));c.appendChild(cs)}
  return c}
 function fieldBlock(p){const f=(db.fields||[]).find(x=>x.id===p.fid);
  if(!f)return h("p",{class:"fine",text:"This field is no longer available."});
@@ -166,7 +175,7 @@ registerView("feed","Feed",()=>{let tag=TAGS[0],flt="All",area="all";const w=h("
    fl.appendChild(chip(Loc.has()?"Near "+Loc.label()+" ("+(Loc.radius>0?Loc.radius+" km":"anywhere")+")":"Near me",area==="near",()=>{if(!Loc.has()){flash("Set your postal or ZIP code on the Events tab first.");go("events");return}area="near";df();dl()}))};
  ta.oninput=()=>{const n=ta.value.length;cnt.textContent=n+" / "+MAX;cnt.className="count"+(n>MAX?" over":"");go2.disabled=!ta.value.trim()||n>MAX};
  go2.onclick=()=>{api.addPost(tag,ta.value.trim());ta.value="";ta.oninput();dl()};
- w.appendChild(db.me?h("section",{class:"card"},[ta,picks,h("div",{class:"row"},[cnt,h("span",{class:"sp"}),go2])]):guestBanner());dp();df();dl();w.appendChild(fl);w.appendChild(list);return w},{pos:10});
+ w.appendChild(db.me?reveal("post","New post",()=>h("section",{class:"card"},[ta,picks,h("div",{class:"row"},[cnt,h("span",{class:"sp"}),go2])]),{primary:true,focus:"textarea",hide:"Cancel"}):guestBanner());dp();df();dl();w.appendChild(fl);w.appendChild(list);return w},{pos:10});
 registerView("search","Search",()=>{const w=h("div"),res=h("div"),inp=h("input",{placeholder:"Search people, groups, and posts","aria-label":"Search",value:q});
  const dr=()=>{res.innerHTML="";const s=q.trim().toLowerCase();if(!s){res.appendChild(empty("Type a name, group, or keyword."));return}
   const us=db.users.filter(u=>(u.name+" "+u.bio).toLowerCase().includes(s)),ts=db.teams.filter(t=>(t.name+" "+t.about).toLowerCase().includes(s)),ps=db.posts.filter(p=>p.text.toLowerCase().includes(s));
@@ -174,10 +183,10 @@ registerView("search","Search",()=>{const w=h("div"),res=h("div"),inp=h("input",
   if(us.length)res.appendChild(h("h2",{text:"People"}));us.forEach(u=>res.appendChild(h("button",{class:"card thr",onclick:()=>go("profile",u.id)},[avatar(u.id),h("div",{class:"who"},[u.name,h("small",{text:"Rep "+u.rep+(u.bio?" · "+u.bio:"")})])])));
   if(ts.length)res.appendChild(h("h2",{text:"Groups"}));ts.forEach(t=>res.appendChild(teamCard(t,dr)));
   if(ps.length)res.appendChild(h("h2",{text:"Posts"}));ps.forEach(p=>res.appendChild(postCard(p,dr)))};
- inp.oninput=()=>{q=inp.value;dr()};w.appendChild(inp);w.appendChild(res);dr();return w},{pos:60});
+ inp.oninput=()=>{q=inp.value;dr()};w.appendChild(reveal("search","Search",()=>h("div",{class:"row"},[inp]),{primary:true,open:!!q.trim(),focus:"input",hide:"Close search"}));w.appendChild(res);dr();return w},{pos:60});
 registerView("teams","Groups",()=>{const w=h("div"),list=h("div"),nm=h("input",{placeholder:"Group name","aria-label":"Group name"}),ab=h("input",{placeholder:"What is this group about?","aria-label":"About"}),err=h("p",{class:"err"});
  const dl=()=>{list.innerHTML="";[...db.teams].sort((a,b)=>b.members.includes(db.me)-a.members.includes(db.me)).forEach(t=>list.appendChild(teamCard(t,dl)));if(!db.teams.length)list.appendChild(empty("No groups yet."))};
- if(db.me)w.appendChild(h("section",{class:"card"},[h("div",{class:"who"},["Start a group"]),h("div",{class:"row"}),nm,ab,err,h("button",{class:"btn",onclick:()=>{const n=nm.value.trim();if(!n){err.textContent="Give your group a name.";return}api.createTeam(n,ab.value.trim()||"New group.");nm.value=ab.value="";err.textContent="";dl()}},["Create group"])]));
+ if(db.me)w.appendChild(reveal("group","Start a group",()=>h("section",{class:"card"},[h("div",{class:"who"},["Start a group"]),h("div",{class:"row"}),nm,ab,err,h("button",{class:"btn",onclick:()=>{const n=nm.value.trim();if(!n){err.textContent="Give your group a name.";return}api.createTeam(n,ab.value.trim()||"New group.");nm.value=ab.value="";err.textContent="";dl()}},["Create group"])]),{primary:true,focus:"input",hide:"Cancel"}));
  else w.appendChild(guestBanner());
  dl();w.appendChild(list);return w},{pos:50});
 registerView("messages","Messages",()=>{const o=chatUid,w=h("div");
@@ -188,7 +197,7 @@ registerView("messages","Messages",()=>{const o=chatUid,w=h("div");
   w.appendChild(h("div",{class:"row",style:"margin:0 0 8px"},[h("button",{class:"chip",onclick:()=>go("messages")},["Back"]),nameBtn(o)]));
   if(!ms.length)w.appendChild(empty("No messages yet. Say hello."));
   ms.forEach(m=>w.appendChild(h("div",{class:"bub"+(m.from===db.me?" me":""),text:m.x})));
-  w.appendChild(h("div",{class:"cf",style:"margin-top:12px"},[i,h("button",{class:"btn",onclick:send},["Send"])]));return w}
+  w.appendChild(reveal("msg:"+o,"Write a message",()=>h("div",{class:"cf",style:"margin-top:12px"},[i,h("button",{class:"btn",onclick:send},["Send"])]),{primary:true,focus:"input",hide:"Cancel"}));return w}
  const mine=db.msgs.filter(m=>m.from===db.me||m.to===db.me).sort((a,b)=>b.t-a.t),ids=[];
  mine.forEach(m=>{const x=m.from===db.me?m.to:m.from;if(!ids.includes(x))ids.push(x)});
  w.appendChild(h("div",{class:"filters"},db.users.filter(u=>u.id!==db.me).map(u=>chip("Message "+u.name,false,()=>go("messages",u.id)))));
@@ -207,7 +216,9 @@ registerView("profile","Profile",()=>{const u=api.user(viewUid||db.me);
  const bio=h("textarea",{maxlength:"160","aria-label":"Bio",placeholder:"Write a short bio"});bio.value=u.bio;
  const top=h("div",{class:"prof"},[avatar(u.id),h("div",{class:"who"},[u.name,h("small",{text:"Rep "+u.rep+" · "+fol+" followers · "+u.following.length+" following · "+np+" posts"})])]);
  const card=h("section",{class:"card"},[top]);
- if(self){card.appendChild(h("div",{class:"row"},[bio]));card.appendChild(h("div",{class:"row"},[h("button",{class:"btn",onclick:()=>{api.setBio(bio.value);flash("Bio saved");render()}},["Save bio"]),h("span",{class:"sp"}),h("button",{class:"chip",onclick:()=>{api.logout();go("feed")}},["Log out"])]))}
+ if(self){card.appendChild(h("p",{class:"body",text:u.bio||"No bio yet."}));
+  card.appendChild(reveal("bio","Edit bio",()=>h("div",{},[h("div",{class:"row"},[bio]),h("div",{class:"row"},[h("button",{class:"btn",onclick:()=>{api.setBio(bio.value);flash("Bio saved");openBox.bio=false;render()}},["Save bio"])])]),{focus:"textarea",hide:"Cancel"}));
+  card.appendChild(h("div",{class:"row"},[h("span",{class:"sp"}),h("button",{class:"chip",onclick:()=>{api.logout();go("feed")}},["Log out"])]))}
  else{const f=db.me&&api.me().following.includes(u.id);card.appendChild(h("p",{class:"body",text:u.bio||"No bio yet."}));
   card.appendChild(h("div",{class:"row"},[h("button",{class:f?"chip":"btn",onclick:need("follow people",()=>{api.follow(u);render()})},[f?"Unfollow":"Follow"]),h("button",{class:"chip",onclick:need("send messages",()=>go("messages",u.id))},["Message"])]))}
  if(tm.length)card.appendChild(h("div",{class:"row"},tm.map(t=>h("span",{class:"tag",text:t.name}))));
@@ -255,8 +266,8 @@ profileSections.push(function mfaCard(){const box=h("section",{class:"card"});
     h("button",{class:"chip",onclick:async()=>{await sb.auth.mfa.unenroll({factorId:e.data.id});draw()}},["Cancel"])]))}},["Set up 2FA"]))};
  draw();return box});
 profileSections.unshift(function usernameCard(){const i=h("input",{value:nameOf(db.me),"aria-label":"Username",maxlength:"30"}),err=h("p",{class:"err",role:"alert"});
- return h("section",{class:"card"},[h("div",{class:"who"},["Your public username"]),h("p",{class:"fine",text:"This is the only name other people see. Your email, and any phone number you add, stay private."}),i,err,
-  h("button",{class:"chip",onclick:async()=>{err.textContent="";const e=await api.setUsername(i.value);if(e)err.textContent=e;else{flash("Username changed");render()}}},["Change username"])])});
+ return h("section",{class:"card"},[h("div",{class:"who"},["Your public username",h("small",{text:"This is the only name other people see. Your email, and any phone number you add, stay private."})]),
+  reveal("username","Change username",()=>h("div",{},[i,err,h("button",{class:"btn",onclick:async()=>{err.textContent="";const e=await api.setUsername(i.value);if(e)err.textContent=e;else{flash("Username changed");openBox.username=false;render()}}},["Save username"])]),{focus:"input",hide:"Cancel"})])});
 function setup(){$("#app").appendChild(h("section",{class:"card",style:"margin-top:40px"},[h("h2",{text:"Connect Supabase"}),
  h("p",{text:"Open config.js and set SUPABASE_URL and SUPABASE_KEY. Both are in your Supabase project under Project Settings, API. Use the anon (public) key, never the service-role key."}),
  h("p",{class:"fine",text:"Then run the SQL files in supabase/migrations once, in order, and reload this page."})]))}

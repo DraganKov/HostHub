@@ -233,8 +233,9 @@ registerView("events","Events",()=>{dropEvMaps();const w=h("div"),list=h("div"),
  rad.onchange=()=>{Loc.radius=parseInt(rad.value);Loc.save();dl()};tx.oninput=()=>{evText=tx.value;dl()};pc.onkeydown=e=>{if(e.key==="Enter")setLoc()};
  const geoBtn=h("button",{class:"chip",onclick:()=>{err.textContent="";if(!navigator.geolocation){err.textContent="Your browser can’t share its location.";return}
   navigator.geolocation.getCurrentPosition(p=>{Object.assign(Loc,{code:"",lat:p.coords.latitude,lng:p.coords.longitude,city:""});pc.value="";Loc.save();dl()},()=>{err.textContent="Couldn’t get your location. Enter a postal code instead."})}},["Use my location"]);
- w.appendChild(h("section",{class:"card"},[h("div",{class:"who"},["Events near you"]),h("div",{class:"grid2",style:"margin-top:8px"},[pc,rad]),
-  h("div",{class:"row",style:"margin-top:0"},[h("button",{class:"btn",onclick:setLoc},["Search area"]),geoBtn]),err,tx,status]));
+ w.appendChild(h("section",{class:"card"},[h("div",{class:"who"},["Events near you"]),status,
+  reveal("evfilter","Change area or search",()=>h("div",{},[h("div",{class:"grid2",style:"margin-top:8px"},[pc,rad]),
+   h("div",{class:"row",style:"margin-top:0"},[h("button",{class:"btn",onclick:setLoc},["Search area"]),geoBtn]),err,tx]),{hide:"Hide search"})]));
  const bar=h("div",{class:"filters"},[chip("All",evFilter==="all",()=>{evFilter="all";render()}),chip("My events",evFilter==="mine",need("see your events",()=>{evFilter="mine";render()})),chip("Past",evFilter==="past",()=>{evFilter="past";render()})]);
  const host=h("button",{class:"btn",onclick:need("host events",()=>{dupOf=null;showForm=true;render()})},["Host an event"]);
  w.appendChild(h("div",{class:"row",style:"margin:0 0 8px"},[bar,h("span",{class:"sp"}),host]));

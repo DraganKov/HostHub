@@ -66,7 +66,7 @@ function pollBody(p,again,preview){
   box.appendChild(bar);
   if(p.allowAdd&&db.me&&p.options.length<10){const inp=h("input",{placeholder:"Add your own choice","aria-label":"Add a choice",maxlength:"100"});
    const add=async()=>{const v=inp.value.trim();if(!v)return;const e=await api.addPollOption(p.id,v);if(e)err.textContent=e;else{flash("Choice added");again()}};
-   inp.onkeydown=e=>{if(e.key==="Enter")add()};box.appendChild(h("div",{class:"cf",style:"margin-top:8px"},[inp,h("button",{class:"chip",onclick:add},["Add"])]))}}
+   inp.onkeydown=e=>{if(e.key==="Enter")add()};box.appendChild(reveal("pollopt:"+p.id,"Add your own choice",()=>h("div",{class:"cf",style:"margin-top:8px"},[inp,h("button",{class:"chip",onclick:add},["Add"])]),{focus:"input",hide:"Cancel"}))}}
  if(!preview&&open&&!db.me)box.appendChild(h("div",{class:"row"},[h("button",{class:"btn",onclick:()=>openAuth("vote in polls","signup")},["Create an account to vote"])]));
  box.appendChild(err);return box}
 
