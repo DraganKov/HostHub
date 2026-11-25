@@ -1,4 +1,4 @@
-/* Public finances: every signed-in member can see what the site costs to run and what has been donated. Only admins can add entries. */
+/* Finances. For the time being only admins can open this page or read the ledger (see supabase/migrations/0016_finances_admin_only.sql). To make it public to members again, drop the admin:true option below and restore the "members read ledger" policy. */
 "use strict";
 db.ledger=[];
 pullHooks.push(async()=>{if(!db.me){db.ledger=[];return}
@@ -31,4 +31,4 @@ registerView("finances","Finances",()=>{const w=h("div"),L=db.ledger,sum=k=>L.fi
  L.forEach(x=>w.appendChild(h("div",{class:"card row ledg"},[h("div",{class:"who"},[x.desc,h("small",{text:x.day+(x.cat?" · "+x.cat:"")})]),h("span",{class:"sp"}),
   h("b",{class:x.kind==="donation"?"pos":"neg",text:(x.kind==="donation"?"+":"−")+money(x.cents,x.cur)}),
   db.isAdmin?h("button",{class:"act",onclick:()=>{api.delLedger(x.id);render()}},["Delete"]):null])));
- return w},{pos:70,auth:true});
+ return w},{pos:70,auth:true,admin:true});

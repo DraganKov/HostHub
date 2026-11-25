@@ -1,6 +1,6 @@
 # Airsoft Hub (HostHub)
 
-A generic, hobby-agnostic community site: feed, groups, messages, reputation (up/down votes), events with registration and prepay tracking, postal-code and distance search, .ics calendar export, field maps with game-mode layers, and public finances.
+A generic, hobby-agnostic community site: feed, groups, messages, reputation (up/down votes), events with registration and prepay tracking, postal-code and distance search, .ics calendar export, field maps with game-mode layers, and finances (admin-only for now).
 
 Built entirely on open source: Supabase (Postgres, Auth, Realtime), Leaflet and Leaflet.draw, OpenStreetMap, Esri imagery tiles, zippopotam.us (postal geocoding), RFC 5545 iCalendar. No build step: static files.
 
@@ -56,3 +56,6 @@ Usernames only. Email, phone and home postal code are private to the account. Al
 
 ## Directory
 The Directory tab shows every field and store as a card grid, closest first once you set your area (postal or ZIP code, or "Use my location"; the same saved area the Events tab uses). Each card has a colour tile with the distance, badges, a short description and links. Without a saved area it falls back to A to Z and offers a "Show what’s closest to me" button. Filters cover outdoor, indoor, stores and province, plus search. Anyone can browse. Signed-in, verified members can add a listing (fields start as drafts until the playing area is drawn; stores go live straight away), edit their own and delete them. Admins can edit or delete any listing. Links are only shown if they are plain `http(s)` addresses. The Partners tab shows active partners as cards in the same grid; admins add, edit, hide, reorder and delete them. Partners show an initial tile, never an externally hosted logo. Database changes are in `supabase/migrations/0014_directory.sql`.
+
+## Finances (admin-only for now)
+The Finances page is hidden from everyone except site admins: no menu tab, and anyone else who opens the link sees "only available to site admins". This is enforced in the database too (`supabase/migrations/0016_finances_admin_only.sql` replaces the member read policy on `ledger` with an admin-only one), so members cannot read the ledger through the API either. To make it public to signed-in members again, remove `admin:true` from the `registerView("finances", ...)` call in `finance.js` and restore the policy as described at the top of that migration.

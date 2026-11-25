@@ -11,7 +11,7 @@ const VIEW={},META=[],pullHooks=[],profileSections=[];
    auth:true  = needs an account (hidden from guests, shows a sign-in prompt)
    userNav:true = only listed in the tab bar when signed in (but others can still link to it)
    pos = tab order */
-function registerView(id,label,fn,o){o=o||{};VIEW[id]=fn;META.push({id,label,auth:!!o.auth,userNav:!!o.userNav,pos:o.pos||50});META.sort((a,b)=>a.pos-b.pos)}
+function registerView(id,label,fn,o){o=o||{};VIEW[id]=fn;META.push({id,label,auth:!!o.auth,admin:!!o.admin,userNav:!!o.userNav,pos:o.pos||50});META.sort((a,b)=>a.pos-b.pos)}
 /* ===== Data layer: the UI reads from `db` (a local copy) and writes through `api`. Writes update `db` instantly, then save to Supabase; a failed save re-syncs from the server. ===== */
 async function pull(){
  const tables=["profiles","posts","comments","follows","groups","group_members"].concat(db.me?["votes","messages","notifications"]:[]);
@@ -113,7 +113,7 @@ function openAuth(why,mode){authWhy=why?"Create an account or log in to "+why+".
 function go(r,arg){route=r;if(r==="profile")viewUid=arg||null;if(r==="messages")chatUid=arg||null;
  try{if(location.hash!=="#"+r)location.hash=r}catch(e){}render();scrollTo(0,0)}
 addEventListener("hashchange",()=>{const r=location.hash.slice(1);if(META.some(m=>m.id===r)&&r!==route){route=r;viewUid=null;chatUid=null;render()}});
-const tabVisible=m=>db.me||!(m.auth||m.userNav);
+const tabVisible=m=>m.admin?!!(db.me&&db.isAdmin):(db.me||!(m.auth||m.userNav));
 /* Simple line icons for the navigation (24x24, drawn with DOM calls so they work under the page's security policy). */
 const ICONS={polls:"M5 20V11M12 20V4M19 20v-6",feed:"M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",search:"M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm9 16l-4-4",teams:"M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm7 1a2.5 2.5 0 1 0 0-5M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6zm13-5c2.8.3 5 2.4 5 5h-4",
  messages:"M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z",alerts:"M6 17V11a6 6 0 0 1 12 0v6l2 2H4zM10 21h4",profile:"M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z",
@@ -134,9 +134,12 @@ function render(){const a=$("#app");a.innerHTML="";drawNav();
  if(db.mfaPending){a.appendChild(mfaView());return}
  if(route==="auth"){a.appendChild(authView());return}
  const m=META.find(x=>x.id===route)||META[0];
+ if(m.admin&&!(db.me&&db.isAdmin)){a.appendChild(adminOnlyView(m));return}
  if(m.auth&&!db.me){a.appendChild(gateView(m));return}
  if(db.me&&!db.verified)a.appendChild(verifyBanner());
  a.appendChild(VIEW[m.id]())}
+/* Pages marked admin:true are hidden from the menu and show this to everyone else. The database enforces it too. */
+const adminOnlyView=m=>h("section",{class:"card",style:"margin-top:24px"},[h("h2",{text:m.label}),h("p",{text:m.label+" is only available to site admins right now."}),h("div",{class:"row"},[h("button",{class:"btn",onclick:()=>go("feed")},["Back to the feed"])])]);
 const gateView=m=>h("section",{class:"card",style:"margin-top:24px"},[h("h2",{text:m.label}),h("p",{text:"You need an account to use "+m.label+". Browsing posts, groups, events and maps is open to everyone."}),
  h("div",{class:"row"},[h("button",{class:"btn",onclick:()=>openAuth("use "+m.label,"signup")},["Create account"]),h("button",{class:"chip",onclick:()=>openAuth("use "+m.label,"login")},["Log in"])])]);
 /* ===== Components ===== */
