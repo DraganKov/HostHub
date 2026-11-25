@@ -215,6 +215,25 @@ textarea{border-radius:14px;min-height:64px}
  .brand .bf{margin-left:0;padding-left:12px}
  .nav:hover .brand .bm,.nav:focus-within .brand .bm{opacity:0}
 }
+
+/* Account and brand are one combined panel: a compact tile in the rail, the full card when open. */
+.hdr{display:contents}
+@media(min-width:800px){
+ .hdr{display:block;background:var(--bg);border-radius:12px;padding:6px;margin-bottom:8px}
+ .hdr .acct{background:none;padding:2px 6px;margin:0;border-radius:0}
+ .hdr .brand{border-top:1px solid var(--line);margin:4px 0 0;padding:4px 0 0;height:auto;min-height:32px}
+}
+@media (min-width:800px) and (hover:hover){
+ .hdr{padding:2px;margin-bottom:6px}
+ .hdr .accwrap,.nav:hover .hdr .accwrap,.nav:focus-within .hdr .accwrap{background:none;padding:0;margin:0}
+ .nav:hover .hdr,.nav:focus-within .hdr{padding:8px 6px}
+ .nav:hover .hdr .accwrap,.nav:focus-within .hdr .accwrap{padding:2px 6px}
+ .hdr .brand{height:30px;min-height:0;margin-top:0;padding-top:0;border-top-color:transparent}
+ .nav:hover .hdr .brand,.nav:focus-within .hdr .brand{height:auto;min-height:32px;margin-top:6px;padding-top:8px;border-top-color:var(--line)}
+ .hdr .brand .bm{height:30px}
+ .nav:hover .hdr .brand .bm,.nav:focus-within .hdr .brand .bm{height:100%}
+ .hdr .brand .bf{padding-left:6px}
+}
 </style>
 </head>
 <body>
