@@ -32,7 +32,7 @@ const pollRule={always:"Results are visible to everyone",after_vote:"Results sho
 
 /* Draft of the poll being built. It lives outside the view so typing survives a refresh of the page data. */
 const blankDraft=()=>({q:"",desc:"",opts:["",""],multi:false,max:2,close:"never",closeAt:"",show:"always",add:false});
-let draft=blankDraft(),pollFilter="all";const pollSel={},pollArm={};
+let draft=blankDraft(),pollFilter="all",builderOpen=false;const pollSel={},pollArm={};
 
 /* The poll as people see it. In preview mode nothing can be sent. */
 function pollBody(p,again,preview){
@@ -124,7 +124,7 @@ function pollBuilder(again){
    if(draft.close==="custom"){const t=Date.parse(draft.closeAt);if(!t||t<now+5*6e4){err.textContent="Pick a close time at least 5 minutes from now.";return}if(t>now+90*864e5){err.textContent="Polls can stay open up to 90 days.";return}closes=new Date(t).toISOString()}
    else if(draft.close!=="never")closes=new Date(now+({"1h":36e5,"1d":864e5,"3d":3*864e5,"7d":7*864e5}[draft.close])).toISOString();
    go.disabled=true;const e=await api.createPoll({q:draft.q.trim(),desc:draft.desc.trim(),opts,multi:draft.multi,max:draft.multi?Math.min(draft.max,opts.length):1,show:draft.show,allowAdd:draft.add,closes});
-   go.disabled=false;if(e){err.textContent=e;return}draft=blankDraft();flash("Poll created");again()}},["Create poll"]);
+   go.disabled=false;if(e){err.textContent=e;return}draft=blankDraft();builderOpen=false;flash("Poll created");again()}},["Create poll"]);
  card.appendChild(h("div",{class:"who"},["Create a poll",h("small",{text:"Ask the community. Add 2 to 10 choices."})]));
  card.appendChild(q);card.appendChild(desc);card.appendChild(list);
  card.appendChild(h("div",{class:"pset"},[
@@ -132,14 +132,15 @@ function pollBuilder(again){
   h("label",{class:"fld"},[h("span",{text:"Closing"}),close,when]),
   h("label",{class:"fld"},[h("span",{text:"Results"}),show]),
   h("label",{class:"chk",for:"padd"},[add," Let members add their own choices (up to 2 each)"])]));
- card.appendChild(prev);card.appendChild(err);card.appendChild(h("div",{class:"row"},[go,h("button",{class:"chip",onclick:()=>{draft=blankDraft();again()}},["Clear"])]));
+ card.appendChild(prev);card.appendChild(err);card.appendChild(h("div",{class:"row"},[go,h("button",{class:"chip",onclick:()=>{draft=blankDraft();again()}},["Clear"]),h("button",{class:"chip",onclick:()=>{builderOpen=false;again()}},["Close builder"])]));
  drawOpts();drawMax();return card}
 
 registerView("polls","Polls",()=>{const w=h("div"),again=()=>render();
- w.appendChild(db.me?pollBuilder(again):guestBanner());
+ if(!db.me)w.appendChild(guestBanner());else if(builderOpen)w.appendChild(pollBuilder(again));
+ else w.appendChild(h("div",{class:"row",style:"margin:0 0 4px"},[h("h2",{text:"Polls",style:"margin:0"}),h("span",{class:"sp"}),h("button",{class:"btn",onclick:()=>{builderOpen=true;again();const q=$("[aria-label='Poll question']");if(q)q.focus()}},["Create a poll"])]));
  const f=h("div",{class:"filters"}),list=h("div");
  const dl=()=>{f.innerHTML="";[["all","All"],["open","Open"],["closed","Closed"],["mine","Mine"]].forEach(([k,t])=>f.appendChild(chip(t,pollFilter===k,()=>{pollFilter=k;dl()})));
   list.innerHTML="";const ps=db.polls.filter(p=>pollFilter==="all"||(pollFilter==="open"&&pollOpen(p))||(pollFilter==="closed"&&!pollOpen(p))||(pollFilter==="mine"&&p.uid===db.me));
   if(!ps.length)list.appendChild(empty(pollFilter==="mine"?"You haven’t created a poll yet.":"No polls here yet. Create the first one."));
   ps.forEach(p=>list.appendChild(pollCard(p,again)))};
- w.appendChild(h("h2",{text:"Polls"}));w.appendChild(f);w.appendChild(list);dl();return w},{pos:15});
+ if(!db.me||builderOpen)w.appendChild(h("h2",{text:"Polls"}));w.appendChild(f);w.appendChild(list);dl();return w},{pos:15});
