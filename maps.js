@@ -127,9 +127,9 @@ registerView("maps","Maps",()=>{if(activeMap){try{activeMap.remove()}catch(e){}a
  w.appendChild(h("div",{class:"row",style:"margin:0 0 8px"},[h("h2",{style:"margin:0",text:"Fields and maps"}),h("span",{class:"sp"}),h("button",{class:"btn",onclick:need("add a field",()=>{fieldFormOpen=true;render()})},["Add a field"])]));
  if(fieldFormOpen&&db.me)w.appendChild(fieldForm(()=>{fieldFormOpen=false;render()}));
  const kf=h("div",{class:"filters"}),dk=()=>{kf.innerHTML="";[["all","All"],["field","Fields"],["store","Stores"]].forEach(([k,t])=>kf.appendChild(chip(t,kindQ===k,()=>{kindQ=k;dk();dl()})))};dk();
+ if(am)w.appendChild(am.el);
  if(db.isAdmin&&typeof claimQueue==="function"&&db.claims.some(c=>c.status==="pending"))w.appendChild(claimQueue());
  if(db.isAdmin&&typeof importCard==="function")w.appendChild(importCard());
- if(am)w.appendChild(am.el);
  const mo=h("div",{class:"row"});const mc=()=>{mo.innerHTML="";if(am)mo.appendChild(chip("Only list what’s on the map",mapOnly,()=>{mapOnly=!mapOnly;mc();dl()}))};mc();
  w.appendChild(tx);w.appendChild(kf);w.appendChild(mo);w.appendChild(status);dl();w.appendChild(list);return w},{pos:40});
 function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m=>m.fieldId===f.id),msg=h("p",{class:"err",role:"alert"}),cur=maps.find(m=>m.id===curMap);
