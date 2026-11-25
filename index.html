@@ -197,6 +197,10 @@ textarea{border-radius:14px;min-height:64px}
  .nav:hover .acct .me,.nav:focus-within .acct .me{display:flex}
 }
 @media (prefers-reduced-motion:reduce){.nav .in,.brand .bf,.tab .tl{transition:none!important}}
+
+/* Content column fills the page width in any orientation. */
+.wrap,.shell.solo .wrap{max-width:none;width:100%;margin:0;padding-left:clamp(14px,3vw,40px);padding-right:clamp(14px,3vw,40px)}
+.shell.solo .wrap{max-width:560px;margin:0 auto}
 </style>
 </head>
 <body>
