@@ -113,7 +113,7 @@ function drawNav(){const n=$("#nav");n.innerHTML="";const sh=$("#shell");if(sh)s
   acct=u?h("div",{class:"acct"},[h("button",{class:"link me",onclick:()=>go("profile",db.me)},[u.name,h("small",{text:"Rep "+(u.rep||0)})]),h("div",{class:"row2"},[h("button",{class:"chip",onclick:()=>go("profile")},["Account"]),h("button",{class:"chip",onclick:()=>api.logout()},["Log out"])])])
    :h("div",{class:"acct"},[h("div",{class:"row2"},[h("button",{class:"btn",onclick:()=>openAuth("","login")},["Log in"]),h("button",{class:"chip",onclick:()=>openAuth("","signup")},["Create account"])])]);
  acct.className+=" accwrap";acct.appendChild(h("button",{class:"accmini",type:"button","aria-label":u?"Your profile":"Log in",onclick:()=>u?go("profile"):openAuth("","login")},[u?h("span",{class:"av",text:u.name.charAt(0).toUpperCase()}):icon("profile")]));
- n.appendChild(h("div",{class:"in"},[h("div",{class:"brand"},[h("span",{class:"bm","aria-hidden":"true",text:BRAND[0].charAt(0)+BRAND[1].charAt(0)}),h("span",{class:"bf"},[BRAND[0]+" ",h("span",{text:BRAND[1]})])]),acct,
+ n.appendChild(h("div",{class:"in"},[acct,h("div",{class:"brand"},[h("span",{class:"bm","aria-hidden":"true",text:BRAND[0].charAt(0)+BRAND[1].charAt(0)}),h("span",{class:"bf"},[BRAND[0]+" ",h("span",{text:BRAND[1]})])]),
   h("nav",{class:"tabs","aria-label":"Main"},META.filter(tabVisible).map(m=>h("button",{class:"tab","aria-current":m.id===route?"page":null,onclick:()=>go(m.id)},[icon(m.id),h("span",{class:"tl",text:m.label}),bd[m.id]?h("span",{class:"badge",text:String(bd[m.id])}):null])))]))}
 function render(){const a=$("#app");a.innerHTML="";drawNav();
  if(db.mfaPending){a.appendChild(mfaView());return}

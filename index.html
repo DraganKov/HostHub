@@ -201,6 +201,12 @@ textarea{border-radius:14px;min-height:64px}
 /* Content column fills the page width in any orientation. */
 .wrap,.shell.solo .wrap{max-width:none;width:100%;margin:0;padding-left:clamp(14px,3vw,40px);padding-right:clamp(14px,3vw,40px)}
 .shell.solo .wrap{max-width:560px;margin:0 auto}
+
+/* Account block sits at the very top of the sidebar, like Discord's user panel. */
+@media(min-width:800px){.acct{order:0;margin-top:0}.brand{order:1}.tabs{order:2}}
+@media(min-width:800px) and (hover:hover){.nav .in{padding-top:10px}.accwrap{margin:0 0 4px}.brand{height:38px;margin-top:2px}}
+@media(max-width:799px){.acct{order:0;margin:0}.brand{order:1;margin-left:auto}.nav .in{flex-wrap:nowrap}.acct .row2{flex-wrap:nowrap}.acct .chip{background:var(--bg)}.brand{white-space:nowrap;font-size:19px}}
+.brand .bm{display:none}@media (min-width:800px) and (hover:hover){.brand .bm{display:block}}
 </style>
 </head>
 <body>
