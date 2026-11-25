@@ -103,7 +103,7 @@ const tabVisible=m=>db.me||!(m.auth||m.userNav);
 function drawNav(){const n=$("#nav");n.innerHTML="";const sh=$("#shell");if(sh)sh.classList.toggle("solo",!!db.mfaPending);if(db.mfaPending){n.hidden=true;return}n.hidden=false;
  const bd=db.me?{alerts:db.notifs.filter(x=>x.to===db.me&&!x.read).length,messages:db.msgs.filter(m=>m.to===db.me&&!m.read).length}:{};
  const u=db.me?api.user(db.me):null,
-  acct=u?h("div",{class:"acct"},[h("button",{class:"link me",onclick:()=>go("profile",db.me)},[u.name,h("small",{text:"Rep "+(u.rep||0)})]),h("div",{class:"row2"},[h("button",{class:"chip",onclick:()=>go("profile")},["Account"]),h("button",{class:"chip",onclick:()=>api.logout()},["Sign out"])])])
+  acct=u?h("div",{class:"acct"},[h("button",{class:"link me",onclick:()=>go("profile",db.me)},[u.name,h("small",{text:"Rep "+(u.rep||0)})]),h("div",{class:"row2"},[h("button",{class:"chip",onclick:()=>go("profile")},["Account"]),h("button",{class:"chip",onclick:()=>api.logout()},["Log out"])])])
    :h("div",{class:"acct"},[h("div",{class:"row2"},[h("button",{class:"btn",onclick:()=>openAuth("","login")},["Log in"]),h("button",{class:"chip",onclick:()=>openAuth("","signup")},["Create account"])])]);
  n.appendChild(h("div",{class:"in"},[h("div",{class:"brand"},[BRAND[0]+" ",h("span",{text:BRAND[1]})]),acct,
   h("nav",{class:"tabs","aria-label":"Main"},META.filter(tabVisible).map(m=>h("button",{class:"tab","aria-current":m.id===route?"page":null,onclick:()=>go(m.id)},[m.label,bd[m.id]?h("span",{class:"badge",text:String(bd[m.id])}):null])))]))}
@@ -192,7 +192,7 @@ registerView("profile","Profile",()=>{const u=api.user(viewUid||db.me);
  const bio=h("textarea",{maxlength:"160","aria-label":"Bio",placeholder:"Write a short bio"});bio.value=u.bio;
  const top=h("div",{class:"prof"},[avatar(u.id),h("div",{class:"who"},[u.name,h("small",{text:"Rep "+u.rep+" · "+fol+" followers · "+u.following.length+" following · "+np+" posts"})])]);
  const card=h("section",{class:"card"},[top]);
- if(self){card.appendChild(h("div",{class:"row"},[bio]));card.appendChild(h("div",{class:"row"},[h("button",{class:"btn",onclick:()=>{api.setBio(bio.value);flash("Bio saved");render()}},["Save bio"]),h("span",{class:"sp"}),h("button",{class:"chip",onclick:()=>{api.logout();go("feed")}},["Sign out"])]))}
+ if(self){card.appendChild(h("div",{class:"row"},[bio]));card.appendChild(h("div",{class:"row"},[h("button",{class:"btn",onclick:()=>{api.setBio(bio.value);flash("Bio saved");render()}},["Save bio"]),h("span",{class:"sp"}),h("button",{class:"chip",onclick:()=>{api.logout();go("feed")}},["Log out"])]))}
  else{const f=db.me&&api.me().following.includes(u.id);card.appendChild(h("p",{class:"body",text:u.bio||"No bio yet."}));
   card.appendChild(h("div",{class:"row"},[h("button",{class:f?"chip":"btn",onclick:need("follow people",()=>{api.follow(u);render()})},[f?"Unfollow":"Follow"]),h("button",{class:"chip",onclick:need("send messages",()=>go("messages",u.id))},["Message"])]))}
  if(tm.length)card.appendChild(h("div",{class:"row"},tm.map(t=>h("span",{class:"tag",text:t.name}))));

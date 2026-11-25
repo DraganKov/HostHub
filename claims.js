@@ -21,7 +21,7 @@ function claimCard(f){if(!claimable(f)||db.me===f.owner)return null;
  const bad=db.me&&lastDecided(f);if(bad)card.appendChild(h("p",{class:"fine",text:"Your last claim was declined"+(bad.note?": "+bad.note:".")+" You can send a new one with more detail."}));
  let open=false;const body=h("div");
  const form=()=>{body.innerHTML="";const msg=h("textarea",{"aria-label":"How can we confirm this is yours?",maxlength:"1000",rows:"4",placeholder:"How can we confirm you run it? For example: the field’s Facebook or Instagram page that you manage, your website, a waiver or insurance document link, or who we can contact. Only admins see this."}),
-   ev=h("input",{"aria-label":"Link that shows you run it",maxlength:"300",placeholder:"Link (optional), like your field’s page"}),er=h("p",{class:"err",role:"alert"});
+   ev=h("input",{"aria-label":"Link that shows you run it",maxlength:"300",placeholder:"Link (optional), such as your field’s page"}),er=h("p",{class:"err",role:"alert"});
   const go1=h("button",{class:"btn",onclick:async()=>{er.textContent="";const m=msg.value.trim();if(m.length<10){er.textContent="Tell us a bit more (at least 10 characters).";return}
    let u=ev.value.trim();if(u&&!/^https?:\/\//i.test(u))u="https://"+u;if(u){try{const x=new URL(u);if(!/^https?:$/.test(x.protocol)||!x.hostname.includes("."))throw 0}catch(e){er.textContent="That link doesn’t look right.";return}}
    go1.disabled=true;const e=await api.claimField(f.id,m,u);go1.disabled=false;if(e){er.textContent=e;return}flash("Claim sent. An admin will review it.");render()}},["Send claim"]);

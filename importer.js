@@ -39,18 +39,18 @@ function normRows(text,fileName){const raw=[];const t=String(text||"").trim();
 Object.assign(api,{async importFields(rows,source){const r=await sb.rpc("import_fields",{p_rows:rows,p_source:source});if(r.error)return{error:r.error.message};return{data:r.data}}});
 let importMsg="";
 function importCard(){const err=h("p",{class:"err",role:"alert"}),out=h("div",{class:"fine",text:importMsg}),
- src=h("input",{"aria-label":"Source name",value:"milsimhub.ca",maxlength:"80"}),ta=h("textarea",{"aria-label":"Listings to import",placeholder:"Paste CSV, JSON, GeoJSON or KML here, or choose a file",rows:"5"}),
+ src=h("input",{"aria-label":"Source name",placeholder:"Source name (required), e.g. the site the list came from",maxlength:"80"}),ta=h("textarea",{"aria-label":"Listings to import",placeholder:"Paste CSV, JSON, GeoJSON or KML here, or choose a file",rows:"5"}),
  file=h("input",{type:"file",accept:".csv,.tsv,.txt,.json,.geojson,.kml","aria-label":"Choose a listings file"});let parsed=null;
  const preview=()=>{err.textContent="";out.textContent="";parsed=null;
   try{const r=normRows(ta.value);parsed=r;const geo=r.rows.filter(x=>x.lat==null).length,st=r.rows.filter(x=>x.kind==="store").length;
    out.textContent=r.rows.length?r.rows.length+" listings found ("+(r.rows.length-st)+" fields, "+st+" stores). "+(geo?geo+" have no coordinates and will be placed using their postal code. ":"")+(r.skipped?r.skipped+" skipped (no name or location). ":"")+"Examples: "+r.rows.slice(0,3).map(x=>x.name).join(", ")+".":"Nothing usable found."+(r.skipped?" "+r.skipped+" rows had no name or location.":"")}
   catch(e){err.textContent=e.message}ib.disabled=!(parsed&&parsed.rows.length)};
  file.onchange=async()=>{const f=file.files[0];file.value="";if(!f)return;if(f.size>2e6){err.textContent="That file is too large (2 MB max).";return}ta.value=await f.text();preview()};
- const ib=h("button",{class:"btn",disabled:true,onclick:async()=>{if(!ib.dataset.arm){ib.dataset.arm=1;ib.textContent="Click again to publish "+parsed.rows.length+" listings";return}
+ const ib=h("button",{class:"btn",disabled:true,onclick:async()=>{if(!ib.dataset.arm){if(!src.value.trim()){err.textContent="Enter a source name first.";return}err.textContent="";ib.dataset.arm=1;ib.textContent="Click again to publish "+parsed.rows.length+" listings";return}
   ib.disabled=true;err.textContent="";const rows=parsed.rows.map(x=>Object.assign({},x));
   try{for(let i=0;i<rows.length;i++){const x=rows[i];if(x.lat==null){out.textContent="Placing listings… "+(i+1)+" of "+rows.length;try{const g=await Geo.geocode(x.postal_code);x.lat=g.lat;x.lng=g.lng;if(!x.city)x.city=g.city}catch(e){x.lat=null}}}
    const ready=rows.filter(x=>x.lat!=null&&x.postal_code);let tot={inserted:0,skipped:rows.length-ready.length,duplicates:0};
-   for(let i=0;i<ready.length;i+=100){out.textContent="Importing… "+Math.min(i+100,ready.length)+" of "+ready.length;const r=await api.importFields(ready.slice(i,i+100),src.value.trim()||"import");
+   for(let i=0;i<ready.length;i+=100){out.textContent="Importing… "+Math.min(i+100,ready.length)+" of "+ready.length;const r=await api.importFields(ready.slice(i,i+100),src.value.trim());
     if(r.error){err.textContent="Stopped: "+r.error+" ("+tot.inserted+" imported so far.)";break}tot.inserted+=r.data.inserted;tot.skipped+=r.data.skipped;tot.duplicates+=r.data.duplicates}
    importMsg="Done: "+tot.inserted+" imported, "+tot.duplicates+" already listed, "+tot.skipped+" skipped.";out.textContent=importMsg;await pull();render()}catch(e){err.textContent=e.message}
   ib.textContent="Import";delete ib.dataset.arm;ib.disabled=false}},["Import"]);

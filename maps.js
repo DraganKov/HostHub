@@ -206,7 +206,7 @@ function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m
     groups.b=mkGroup(bnd);maps.forEach(m=>{groups[m.id]=mkGroup(geos[m.id])});on.forEach(k=>groups[k].addTo(map));
     /* overlay control keeps its original groups; rebuild it */
     if(ctl){map.removeControl(ctl)}ctl=L.control.layers({"Street map":osm,"Topo (terrain)":topo,"Satellite":sat},Object.assign({"Playing area":groups.b},...maps.map(m=>({[m.name]:groups[m.id]}))),{collapsed:true}).addTo(map)}});
-  bar.appendChild(btn("Center on field",fit));if(!editing)bar.appendChild(mBtn);bar.appendChild(locate);if(!editing)bar.appendChild(lbl);bar.appendChild(fsBtn);bar.appendChild(mInfo);
+  bar.appendChild(btn("Centre on field",fit));if(!editing)bar.appendChild(mBtn);bar.appendChild(locate);if(!editing)bar.appendChild(lbl);bar.appendChild(fsBtn);bar.appendChild(mInfo);
   /* ---- export ---- */
   const folders=()=>{const l=[{name:"Playing area",gj:bnd}];maps.forEach(m=>l.push({name:m.name,gj:geos[m.id]}));return l.filter(x=>x.gj&&x.gj.features&&x.gj.features.length)};
   const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"map";
