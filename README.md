@@ -16,6 +16,9 @@ Field owners draw the playing area and any number of game-mode layers: zones, ou
 ## Polls
 Any member can build a poll: 2 to 10 choices, single or multiple choice (with a cap), optional close time (up to 90 days), optional member-added choices, and a results rule (always, after voting, or after closing) that the database enforces. A live preview shows what voters will see. Authors can close or delete their polls. Run migration 0011 first.
 
+## Area map
+The top of the Maps tab is a pan-and-zoom OpenStreetMap of your area (street, topo and satellite layers) with a pin for every published field, store and upcoming event. It centres on the postal code and distance set on the Events tab, "Use my location" recentres it on your device (not saved anywhere), and "Only list what’s on the map" makes the list below follow whatever part of the map you are looking at. It works for guests too. Code is in `areamap.js`.
+
 ## Importing listings
 Admins can bulk-import fields and stores (CSV, JSON, GeoJSON or KML) from the Maps tab. Listings without coordinates are placed by postal code, duplicates (same name and postal code) are skipped, and each import is credited to a source name.
 

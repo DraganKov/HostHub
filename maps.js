@@ -81,7 +81,7 @@ function cleanImport(gj,isB){const shapeOfG={Point:"point",LineString:"line",Pol
   else{if(!KINDS[kind]||KINDS[kind].shape!==sh||kind==="boundary")kind=DEFAULT_KIND[sh]==="ring"?"marker":DEFAULT_KIND[sh];if(kind==="ring"&&!radius)kind="marker"}
   out.push({type:"Feature",properties:Object.assign({kind,label:String(p.label||"").slice(0,60)},kind==="ring"?{radius}:{}),geometry:g})});
  return{gj:{type:"FeatureCollection",features:out.slice(0,200)},skipped:skipped+Math.max(0,out.length-200)}}
-let kindQ="all";let curField=null,curMap=null,fieldMode="view",activeMap=null,fieldFormOpen=false,fieldQ="";
+let kindQ="all",mapOnly=false;let curField=null,curMap=null,fieldMode="view",activeMap=null,fieldFormOpen=false,fieldQ="";
 const geoCache={};
 /* ===== Data helpers ===== */
 Object.assign(api,{
@@ -112,20 +112,26 @@ function fieldForm(done){const nm=h("input",{"aria-label":"Field name",maxlength
   h("div",{class:"row",style:"margin-top:0"},[b,h("button",{class:"chip",onclick:done},["Cancel"])])])}
 registerView("maps","Maps",()=>{if(activeMap){try{activeMap.remove()}catch(e){}activeMap=null}
  const f=db.fields.find(x=>x.id===curField);if(f)return fieldView(f);
- const w=h("div"),list=h("div"),tx=h("input",{"aria-label":"Search fields",placeholder:"Search fields by name or city",value:fieldQ});
+ const w=h("div"),list=h("div"),tx=h("input",{"aria-label":"Search fields",placeholder:"Search fields by name or city",value:fieldQ}),status=h("p",{class:"fine",role:"status"});
+ const match=x=>{const s=fieldQ.trim().toLowerCase();return(kindQ==="all"||x.kind===kindQ)&&(!s||(x.name+" "+x.city+" "+x.about+" "+x.address).toLowerCase().includes(s))};
+ const pinned=()=>db.fields.filter(x=>x.published&&!fieldHidden(x)&&match(x));
+ const am=typeof areaMapPanel==="function"?areaMapPanel(pinned,()=>{if(mapOnly)dl()}):null;
  const dl=()=>{list.innerHTML="";const s=fieldQ.trim().toLowerCase();
-  let l=db.fields.filter(x=>(kindQ==="all"||x.kind===kindQ)&&(!s||(x.name+" "+x.city+" "+x.about+" "+x.address).toLowerCase().includes(s)));
-  if(Loc.has()&&Loc.radius>0&&!s)l=l.filter(x=>dist(x)<=Loc.radius||x.owner===db.me);
+  let l=db.fields.filter(match);
+  if(mapOnly&&am)l=am.inView(l);else if(Loc.has()&&Loc.radius>0&&!s)l=l.filter(x=>dist(x)<=Loc.radius||x.owner===db.me);
   l=l.sort((a,b)=>(dist(a)??1e9)-(dist(b)??1e9)||a.name.localeCompare(b.name));
-  if(!l.length)list.appendChild(empty(Loc.has()&&Loc.radius>0&&!s?"No fields within "+Loc.radius+" km of "+Loc.label()+". Change your area on the Events tab, or search by name.":"No fields yet. Field owners can add theirs above."));
-  l.forEach(x=>list.appendChild(fieldCard(x)))};
+  status.textContent=mapOnly&&am?l.length+" listed in the current map view.":"";
+  if(!l.length)list.appendChild(empty(mapOnly&&am?"Nothing in this part of the map. Zoom out or drag the map.":Loc.has()&&Loc.radius>0&&!s?"No fields within "+Loc.radius+" km of "+Loc.label()+". Change your area on the Events tab, or search by name.":"No fields yet. Field owners can add theirs above."));
+  l.forEach(x=>list.appendChild(fieldCard(x)));if(am)am.refresh()};
  tx.oninput=()=>{fieldQ=tx.value;dl()};
  w.appendChild(h("div",{class:"row",style:"margin:0 0 8px"},[h("h2",{style:"margin:0",text:"Fields and maps"}),h("span",{class:"sp"}),h("button",{class:"btn",onclick:need("add a field",()=>{fieldFormOpen=true;render()})},["Add a field"])]));
  if(fieldFormOpen&&db.me)w.appendChild(fieldForm(()=>{fieldFormOpen=false;render()}));
  const kf=h("div",{class:"filters"}),dk=()=>{kf.innerHTML="";[["all","All"],["field","Fields"],["store","Stores"]].forEach(([k,t])=>kf.appendChild(chip(t,kindQ===k,()=>{kindQ=k;dk();dl()})))};dk();
  if(db.isAdmin&&typeof claimQueue==="function"&&db.claims.some(c=>c.status==="pending"))w.appendChild(claimQueue());
  if(db.isAdmin&&typeof importCard==="function")w.appendChild(importCard());
- w.appendChild(tx);w.appendChild(kf);dl();w.appendChild(list);return w},{pos:40});
+ if(am)w.appendChild(am.el);
+ const mo=h("div",{class:"row"});const mc=()=>{mo.innerHTML="";if(am)mo.appendChild(chip("Only list what’s on the map",mapOnly,()=>{mapOnly=!mapOnly;mc();dl()}))};mc();
+ w.appendChild(tx);w.appendChild(kf);w.appendChild(mo);w.appendChild(status);dl();w.appendChild(list);return w},{pos:40});
 function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m=>m.fieldId===f.id),msg=h("p",{class:"err",role:"alert"}),cur=maps.find(m=>m.id===curMap);
  const box=h("div",{class:"mapbox",role:"region","aria-label":"Map of "+f.name}),ro=h("div",{class:"mapro","aria-live":"off"},["Move the pointer over the map for coordinates"]),bar=h("div",{class:"mapbar"}),
   mapw=h("div",{class:"mapw"},[box,ro]),wrap=h("div",{class:"tacmap"},[mapw,bar]),editing=own&&(fieldMode==="boundary"||(fieldMode==="map"&&cur));

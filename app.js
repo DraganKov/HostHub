@@ -116,6 +116,7 @@ function drawNav(){const n=$("#nav");n.innerHTML="";const sh=$("#shell");if(sh)s
  n.appendChild(h("div",{class:"in"},[h("div",{class:"hdr"},[acct,h("div",{class:"brand"},[h("span",{class:"bm","aria-hidden":"true",text:BRAND[0].charAt(0)+BRAND[1].charAt(0)}),h("span",{class:"bf"},[BRAND[0]+" ",h("span",{text:BRAND[1]})])])]),
   h("nav",{class:"tabs","aria-label":"Main"},META.filter(tabVisible).map(m=>h("button",{class:"tab","aria-current":m.id===route?"page":null,onclick:()=>go(m.id)},[icon(m.id),h("span",{class:"tl",text:m.label}),bd[m.id]?h("span",{class:"badge",text:String(bd[m.id])}):null])))]))}
 function render(){const a=$("#app");a.innerHTML="";drawNav();
+ if(route!=="maps"&&typeof activeMap!=="undefined"&&activeMap){try{activeMap.remove()}catch(e){}activeMap=null}
  if(db.mfaPending){a.appendChild(mfaView());return}
  if(route==="auth"){a.appendChild(authView());return}
  const m=META.find(x=>x.id===route)||META[0];
