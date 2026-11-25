@@ -42,7 +42,7 @@ function commutePanel(t){
    try{let from;
     if(s.src==="saved"&&Loc.has())from={lat:Loc.lat,lng:Loc.lng,label:Loc.label()};
     else if(s.src==="here")from=await here();
-    else{if(!s.code.trim()){throw new Error("Enter the postal or ZIP code you’ll start from.")}const g=await Geo.geocode(s.code);from={lat:g.lat,lng:g.lng,label:g.city?g.city+" ("+g.code+")":g.code}}
+    else{if(!s.code.trim()){throw new Error("Enter the postal or ZIP code you’ll start from.")}const g=await Geo.geocode(s.code);from={lat:g.lat,lng:g.lng,label:g.city?g.city.replace(/\s*\(.*\)\s*$/,"")+" ("+g.code+")":g.code}}
     const r=await getRoute(s.mode,from,t);s.res=Object.assign(r,{from,arrive,mode:s.mode,cushion:s.cushion,early:t.start?s.early:0});s.map=false;drawOut()}
    catch(e){err.textContent=e.message}
    go1.disabled=false;go1.textContent="Work out when to leave"}},["Work out when to leave"]);
