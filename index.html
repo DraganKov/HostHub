@@ -54,177 +54,22 @@ textarea{min-height:84px;resize:vertical;margin-bottom:0}
 .bub.me{margin-left:auto;background:var(--od);border-color:var(--od);color:var(--onod)}
 .err{color:var(--tip);font-weight:600;min-height:1.5em;margin:4px 0}
 .fine{color:var(--mute);font-size:14px}
+.fld{display:block;margin-bottom:8px}.fld>span{display:block;font-size:14px;color:var(--mute);margin-bottom:2px}
+select{width:100%;border:1px solid var(--line);border-radius:4px;background:var(--card);color:inherit;font:inherit;padding:10px;margin-bottom:8px}
+.ok{color:var(--od);font-weight:600;min-height:1.5em;margin:4px 0}
+.btn.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.stat{font:700 13px Barlow,sans-serif;border:1px solid var(--line);border-radius:3px;padding:0 6px;color:var(--mute)}
+.qr{background:#fff;padding:8px;border-radius:6px;width:fit-content}.qr img{display:block;width:176px;height:176px}
+.code{font-family:ui-monospace,Menlo,monospace;overflow-wrap:anywhere;font-size:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}@media(max-width:480px){.grid2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header class="nav" id="nav" hidden></header>
 <div class="wrap" id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script>
-/* ===== Config: set these two values (Supabase > Project Settings > API). Use the anon public key only. ===== */
-const SUPABASE_URL="https://bbrlqxfenmmrffvsgdpr.supabase.co",SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJicmxxeGZlbm1tcmZmdnNnZHByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU1NTE1NTQsImV4cCI6MjExMTEyNzU1NH0.gcaw0jTHNliQvmh_9PfbiwTPt_eIgOgtUyw5UPvomLo";
-/* Brand name, categories, and labels are the only topic-specific parts. Change them to retheme. */
-const BRAND=["Airsoft","Hub"],TAGS=["General","Showcase","Question","Meetup"],MAX=500;
-const VIEWS=["feed","search","teams","messages","alerts","profile"],LABEL={feed:"Feed",search:"Search",teams:"Groups",messages:"Messages",alerts:"Alerts",profile:"Profile"};
-const ready=!SUPABASE_URL.includes("YOUR-PROJECT"),sb=ready?supabase.createClient(SUPABASE_URL,SUPABASE_KEY):null;
-let db={me:null,users:[],posts:[],teams:[],msgs:[],notifs:[]},route="feed",viewUid=null,chatUid=null,authMode="login",q="",openC={},ch,rt;
-const T=s=>new Date(s).getTime(),rid=()=>crypto.randomUUID();
-/* ===== Data layer: the UI reads from `db` (a local copy) and writes through `api`. Writes update `db` instantly, then save to Supabase; a failed save re-syncs from the server. ===== */
-async function pull(){
- const r=await Promise.all(["profiles","posts","votes","comments","follows","groups","group_members","messages","notifications"].map(t=>sb.from(t).select("*")));
- const bad=r.find(x=>x.error);if(bad)throw bad.error;
- const [pr,po,li,co,fo,gr,gm,ms,nf]=r.map(x=>x.data);
- db.users=pr.map(u=>({id:u.id,name:u.username,bio:u.bio||"",following:fo.filter(f=>f.follower===u.id).map(f=>f.followee)}));
- db.posts=po.map(p=>({id:p.id,uid:p.user_id,tag:p.tag,text:p.body,t:T(p.created_at),score:p.score||0,my:(li.find(v=>v.post_id===p.id)||{value:0}).value,
-  comments:co.filter(c=>c.post_id===p.id).sort((a,b)=>T(a.created_at)-T(b.created_at)).map(c=>({uid:c.user_id,x:c.body}))}));
- db.teams=gr.map(g=>({id:g.id,name:g.name,about:g.about||"",owner:g.owner,members:gm.filter(m=>m.group_id===g.id).map(m=>m.user_id)}));
- db.msgs=ms.map(m=>({id:m.id,from:m.sender,to:m.recipient,x:m.body,t:T(m.created_at),read:!!m.read_at}));
- db.notifs=nf.map(n=>({id:n.id,to:n.user_id,from:n.actor_id,text:n.text,t:T(n.created_at),read:n.read}))}
-function flash(m){const e=document.createElement("div");e.setAttribute("role","status");e.textContent=m;e.style.cssText="position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:90vw;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:6px;z-index:20;font-weight:600";document.body.appendChild(e);setTimeout(()=>e.remove(),4500)}
-const vfix=r=>{if(r.error){fix(r);flash(r.error.message.includes("Vote limit")?r.error.message:"Could not save your vote.")}};
-const fix=r=>{if(r.error){console.error(r.error);pull().then(()=>render())}};
-const api={
- user:id=>db.users.find(u=>u.id===id),
- me:()=>api.user(db.me),
- async signup(email,name,pw){if(name.trim().length<2)return"Choose a username of at least 2 characters.";
-  const {data,error}=await sb.auth.signUp({email,password:pw,options:{data:{username:name.trim()}}});
-  if(error)return error.message.includes("Database error")?"That username is taken or invalid.":error.message;
-  return data.session?null:"Check your email to confirm your account, then log in."},
- async login(email,pw){const {error}=await sb.auth.signInWithPassword({email,password:pw});return error?error.message:null},
- logout(){return sb.auth.signOut()},
- setBio(x){const m=api.me();m.bio=x.slice(0,160);sb.from("profiles").update({bio:m.bio}).eq("id",db.me).then(fix)},
- addPost(tag,body){const id=rid();db.posts.push({id,uid:db.me,tag,text:body,t:Date.now(),score:0,my:0,comments:[]});sb.from("posts").insert({id,tag,body}).then(fix)},
- vote(p,d){const old=p.my,k={post_id:p.id,user_id:db.me};
-  const nv=old===d?0:d;p.score+=nv-old;p.my=nv;
-  if(nv===0)sb.from("votes").delete().match(k).then(vfix);
-  else if(old===0)sb.from("votes").insert({post_id:p.id,value:nv}).then(vfix);
-  else sb.from("votes").update({value:nv}).match(k).then(vfix)},
- comment(p,x){p.comments.push({uid:db.me,x});sb.from("comments").insert({post_id:p.id,body:x}).then(fix)},
- del(id){db.posts=db.posts.filter(p=>p.id!==id);sb.from("posts").delete().eq("id",id).then(fix)},
- follow(u){const f=api.me().following,k={follower:db.me,followee:u.id};
-  if(f.includes(u.id)){f.splice(f.indexOf(u.id),1);sb.from("follows").delete().match(k).then(fix)}else{f.push(u.id);sb.from("follows").insert(k).then(fix)}},
- join(t){const k={group_id:t.id,user_id:db.me};
-  if(t.members.includes(db.me)){t.members.splice(t.members.indexOf(db.me),1);sb.from("group_members").delete().match(k).then(fix)}else{t.members.push(db.me);sb.from("group_members").insert(k).then(fix)}},
- createTeam(name,about){const id=rid();db.teams.push({id,name,about,owner:db.me,members:[db.me]});sb.from("groups").insert({id,name,about}).then(fix)},
- send(to,x){db.msgs.push({id:rid(),from:db.me,to,x,t:Date.now(),read:true});sb.from("messages").insert({recipient:to,body:x}).then(fix)},
- readMsgs(o){if(!db.msgs.some(m=>m.from===o&&m.to===db.me&&!m.read))return;db.msgs.forEach(m=>{if(m.from===o&&m.to===db.me)m.read=true});
-  sb.from("messages").update({read_at:new Date().toISOString()}).eq("sender",o).eq("recipient",db.me).is("read_at",null).then(fix)},
- readNotifs(){sb.from("notifications").update({read:true}).eq("user_id",db.me).eq("read",false).then(fix)}
-};
-/* Realtime: any change in Supabase re-pulls the data; only Alerts and Messages redraw so typing is never interrupted. */
-const live=()=>{drawNav();if(route==="alerts"||(route==="messages"&&!chatUid))render();
- else if(route==="messages"){const i=$("#msgin"),v=i?i.value:"";render();const j=$("#msgin");if(j){j.value=v;j.focus()}}};
-const refresh=()=>{clearTimeout(rt);rt=setTimeout(async()=>{try{await pull();live()}catch(e){console.error(e)}},300)};
-const listen=()=>{if(!ch)ch=sb.channel("hub").on("postgres_changes",{event:"*",schema:"public"},refresh).subscribe()};
-function start(){sb.auth.onAuthStateChange((ev,s)=>setTimeout(async()=>{
- if(s&&s.user.id===db.me&&ev!=="INITIAL_SESSION")return;
- if(!s){db.me=null;if(ch){sb.removeChannel(ch);ch=null}render();return}
- db.me=s.user.id;
- try{await pull()}catch(e){console.error(e);$("#app").replaceChildren(h("section",{class:"card"},[h("p",{class:"err",text:"Could not load data: "+e.message+". Have you run schema.sql?"})]));return}
- listen();render()},0))}
-/* ===== UI helpers ===== */
-const $=s=>document.querySelector(s);
-const h=(tag,p,kids)=>{const e=document.createElement(tag);
- for(const k in p||{}){const v=p[k];if(v==null||v===false)continue;
-  if(k==="class")e.className=v;else if(k==="text")e.textContent=v;else if(k.slice(0,2)==="on")e[k]=v;else e.setAttribute(k,v===true?"":v)}
- (kids||[]).forEach(c=>{if(c!=null&&c!==false)e.appendChild(typeof c==="string"?document.createTextNode(c):c)});return e};
-const ago=t=>{const m=Math.max(1,Math.round((Date.now()-t)/6e4));if(m<60)return m+" min ago";const x=Math.round(m/60);return x<24?x+" h ago":Math.round(x/24)+" d ago"};
-const empty=t=>h("div",{class:"empty",text:t});
-const chip=(l,on,fn)=>h("button",{class:"chip",type:"button","aria-pressed":String(on),onclick:fn},[l]);
-const nameOf=id=>(api.user(id)||{name:"Unknown"}).name;
-const avatar=id=>h("div",{class:"av"},[nameOf(id).charAt(0).toUpperCase()]);
-const nameBtn=id=>h("button",{class:"link",onclick:()=>go("profile",id)},[nameOf(id)]);
-const bump=(from)=>{if(!db.me)return;drawNav();if(route==="alerts")render();
- if(from&&route==="messages"&&chatUid===from){const i=$("#msgin"),v=i?i.value:"";render();const j=$("#msgin");if(j){j.value=v;j.focus()}}};
-function go(r,arg){route=r;if(r==="profile")viewUid=arg||null;if(r==="messages")chatUid=arg||null;
- try{if(location.hash!=="#"+r)location.hash=r}catch(e){}render();scrollTo(0,0)}
-addEventListener("hashchange",()=>{const r=location.hash.slice(1);if(VIEWS.includes(r)&&r!==route){route=r;viewUid=null;chatUid=null;render()}});
-function drawNav(){const n=$("#nav");n.innerHTML="";if(!db.me){n.hidden=true;return}n.hidden=false;
- const bd={alerts:db.notifs.filter(x=>x.to===db.me&&!x.read).length,messages:db.msgs.filter(m=>m.to===db.me&&!m.read).length};
- n.appendChild(h("div",{class:"in"},[h("div",{class:"brand"},[BRAND[0]+" ",h("span",{text:BRAND[1]})]),
-  h("nav",{class:"tabs","aria-label":"Main"},VIEWS.map(v=>h("button",{class:"tab","aria-current":v===route?"page":null,onclick:()=>go(v)},[LABEL[v],bd[v]?h("span",{class:"badge",text:String(bd[v])}):null])))]))}
-function render(){const a=$("#app");a.innerHTML="";drawNav();a.appendChild(db.me?VIEW[route]():authView())}
-/* ===== Components ===== */
-function postCard(p,again){
- const acts=h("div",{class:"acts"},[
-  h("span",{class:"vote",role:"group","aria-label":"Vote"},[
-   h("button",{class:"vb","aria-label":"Upvote","aria-pressed":String(p.my===1),onclick:()=>{api.vote(p,1);again()}},["▲"]),
-   h("b",{class:"score",text:String(p.score),"aria-label":"Score "+p.score}),
-   h("button",{class:"vb","aria-label":"Downvote","aria-pressed":String(p.my===-1),onclick:()=>{api.vote(p,-1);again()}},["▼"])]),
-  h("button",{class:"act",onclick:()=>{openC[p.id]=!openC[p.id];again()}},["Comments ("+p.comments.length+")"])]);
- if(p.uid===db.me){acts.appendChild(h("span",{class:"sp"}));acts.appendChild(h("button",{class:"act",onclick:()=>{api.del(p.id);again()}},["Delete"]))}
- const c=h("article",{class:"card post"},[h("header",{},[avatar(p.uid),h("div",{class:"who"},[nameBtn(p.uid),h("small",{text:ago(p.t)})]),h("span",{class:"sp"}),h("span",{class:"tag",text:p.tag})]),h("p",{class:"body",text:p.text}),acts]);
- if(openC[p.id]){const cs=h("div",{class:"comments"},p.comments.map(m=>h("div",{class:"cm"},[h("b",{text:nameOf(m.uid)+": "}),m.x])));
-  const i=h("input",{placeholder:"Add a comment","aria-label":"Comment"}),send=()=>{const v=i.value.trim();if(v){api.comment(p,v);again()}};
-  i.onkeydown=e=>{if(e.key==="Enter")send()};cs.appendChild(h("div",{class:"cf"},[i,h("button",{class:"btn",onclick:send},["Reply"])]));c.appendChild(cs)}
- return c}
-const teamCard=(t,again)=>{const m=t.members.includes(db.me);
- return h("article",{class:"card"},[h("div",{class:"row",style:"margin:0"},[h("div",{class:"who"},[t.name,h("small",{text:t.members.length+(t.members.length===1?" member":" members")})]),h("span",{class:"sp"}),
-  h("button",{class:m?"chip":"btn",onclick:()=>{api.join(t);again()}},[m?"Leave":"Join"])]),h("p",{class:"body",text:t.about}),h("div",{class:"row"},t.members.map(nameBtn))])};
-const postList=(box,get)=>{const d=()=>{box.innerHTML="";const ps=get().sort((a,b)=>b.t-a.t);if(!ps.length)box.appendChild(empty("No posts here yet."));ps.forEach(p=>box.appendChild(postCard(p,d)))};d()};
-/* ===== Views ===== */
-const VIEW={
-feed(){let tag=TAGS[0],flt="All";const w=h("div"),ta=h("textarea",{placeholder:"What’s on your mind? Share an update, ask a question, or organize a meetup.","aria-label":"Post text"}),
- cnt=h("span",{class:"count",text:"0 / "+MAX}),go2=h("button",{class:"btn",disabled:true},["Post"]),picks=h("div",{class:"row"}),fl=h("div",{class:"filters"}),list=h("div");
- const dp=()=>{picks.innerHTML="";TAGS.forEach(t=>picks.appendChild(chip(t,t===tag,()=>{tag=t;dp()})))};
- const dl=()=>postList(list,()=>db.posts.filter(p=>flt==="All"||p.tag===flt)),df=()=>{fl.innerHTML="";["All",...TAGS].forEach(t=>fl.appendChild(chip(t,t===flt,()=>{flt=t;df();dl()})))};
- ta.oninput=()=>{const n=ta.value.length;cnt.textContent=n+" / "+MAX;cnt.className="count"+(n>MAX?" over":"");go2.disabled=!ta.value.trim()||n>MAX};
- go2.onclick=()=>{api.addPost(tag,ta.value.trim());ta.value="";ta.oninput();dl()};
- w.appendChild(h("section",{class:"card"},[ta,picks,h("div",{class:"row"},[cnt,h("span",{class:"sp"}),go2])]));dp();df();dl();w.appendChild(fl);w.appendChild(list);return w},
-search(){const w=h("div"),res=h("div"),inp=h("input",{placeholder:"Search people, groups, and posts","aria-label":"Search",value:q});
- const dr=()=>{res.innerHTML="";const s=q.trim().toLowerCase();if(!s){res.appendChild(empty("Type a name, group, or keyword."));return}
-  const us=db.users.filter(u=>(u.name+" "+u.bio).toLowerCase().includes(s)),ts=db.teams.filter(t=>(t.name+" "+t.about).toLowerCase().includes(s)),ps=db.posts.filter(p=>p.text.toLowerCase().includes(s));
-  if(!us.length&&!ts.length&&!ps.length){res.appendChild(empty("No matches for “"+q.trim()+"”. Try a shorter keyword."));return}
-  if(us.length)res.appendChild(h("h2",{text:"People"}));us.forEach(u=>res.appendChild(h("button",{class:"card thr",onclick:()=>go("profile",u.id)},[avatar(u.id),h("div",{class:"who"},[u.name,h("small",{text:u.bio||"No bio yet"})])])));
-  if(ts.length)res.appendChild(h("h2",{text:"Groups"}));ts.forEach(t=>res.appendChild(teamCard(t,dr)));
-  if(ps.length)res.appendChild(h("h2",{text:"Posts"}));ps.forEach(p=>res.appendChild(postCard(p,dr)))};
- inp.oninput=()=>{q=inp.value;dr()};w.appendChild(inp);w.appendChild(res);dr();return w},
-teams(){const w=h("div"),list=h("div"),nm=h("input",{placeholder:"Group name","aria-label":"Group name"}),ab=h("input",{placeholder:"What is this group about?","aria-label":"About"}),err=h("p",{class:"err"});
- const dl=()=>{list.innerHTML="";[...db.teams].sort((a,b)=>b.members.includes(db.me)-a.members.includes(db.me)).forEach(t=>list.appendChild(teamCard(t,dl)))};
- w.appendChild(h("section",{class:"card"},[h("div",{class:"who"},["Start a group"]),h("div",{class:"row"}),nm,ab,err,h("button",{class:"btn",onclick:()=>{const n=nm.value.trim();if(!n){err.textContent="Give your group a name.";return}api.createTeam(n,ab.value.trim()||"New group.");nm.value=ab.value="";err.textContent="";dl()}},["Create group"])]));
- dl();w.appendChild(list);return w},
-messages(){const o=chatUid,w=h("div");
- if(o){api.readMsgs(o);drawNav();
-  const ms=db.msgs.filter(m=>(m.from===o&&m.to===db.me)||(m.from===db.me&&m.to===o)).sort((a,b)=>a.t-b.t),
-  i=h("input",{id:"msgin",placeholder:"Write a message","aria-label":"Message"}),send=()=>{const v=i.value.trim();if(!v)return;api.send(o,v);render();const j=$("#msgin");if(j)j.focus()};
-  i.onkeydown=e=>{if(e.key==="Enter")send()};
-  w.appendChild(h("div",{class:"row",style:"margin:0 0 8px"},[h("button",{class:"chip",onclick:()=>go("messages")},["Back"]),nameBtn(o)]));
-  if(!ms.length)w.appendChild(empty("No messages yet. Say hello."));
-  ms.forEach(m=>w.appendChild(h("div",{class:"bub"+(m.from===db.me?" me":""),text:m.x})));
-  w.appendChild(h("div",{class:"cf",style:"margin-top:12px"},[i,h("button",{class:"btn",onclick:send},["Send"])]));return w}
- const mine=db.msgs.filter(m=>m.from===db.me||m.to===db.me).sort((a,b)=>b.t-a.t),ids=[];
- mine.forEach(m=>{const x=m.from===db.me?m.to:m.from;if(!ids.includes(x))ids.push(x)});
- w.appendChild(h("div",{class:"filters"},db.users.filter(u=>u.id!==db.me).map(u=>chip("Message "+u.name,false,()=>go("messages",u.id)))));
- if(!ids.length)w.appendChild(empty("No conversations yet. Pick a person above."));
- ids.forEach(x=>{const last=mine.find(m=>m.from===x||m.to===x),nw=mine.some(m=>m.from===x&&!m.read);
-  w.appendChild(h("button",{class:"card thr",onclick:()=>go("messages",x)},[avatar(x),h("div",{class:"who"},[nameOf(x),h("small",{text:last.x.slice(0,70)})]),h("span",{class:"sp"}),nw?h("span",{class:"badge",text:"New"}):null]))});
- return w},
-alerts(){const w=h("div"),ns=db.notifs.filter(n=>n.to===db.me).sort((a,b)=>b.t-a.t);
- if(!ns.length)w.appendChild(empty("Nothing yet. Post something and see who reacts."));
- ns.forEach(n=>w.appendChild(h("div",{class:"card note"+(n.read?"":" new")},[avatar(n.from),h("div",{class:"who"},[nameBtn(n.from),h("small",{text:n.text})]),h("span",{class:"sp"}),h("small",{class:"fine",text:ago(n.t)})])));
- const had=ns.some(n=>!n.read);ns.forEach(n=>n.read=true);if(had){api.readNotifs();drawNav()}return w},
-profile(){const u=api.user(viewUid||db.me),self=u.id===db.me,w=h("div"),list=h("div"),tm=db.teams.filter(t=>t.members.includes(u.id));
- const fol=db.users.filter(x=>x.following.includes(u.id)).length,np=db.posts.filter(p=>p.uid===u.id).length;
- const bio=h("textarea",{maxlength:"160","aria-label":"Bio",placeholder:"Write a short bio"});bio.value=u.bio;
- const top=h("div",{class:"prof"},[avatar(u.id),h("div",{class:"who"},[u.name,h("small",{text:fol+" followers, "+u.following.length+" following, "+np+" posts"})])]);
- const card=h("section",{class:"card"},[top]);
- if(self){card.appendChild(h("div",{class:"row"},[bio]));card.appendChild(h("div",{class:"row"},[h("button",{class:"btn",onclick:()=>{api.setBio(bio.value);render()}},["Save bio"]),h("span",{class:"sp"}),h("button",{class:"chip",onclick:()=>{api.logout();go("feed")}},["Sign out"])]))}
- else{const f=api.me().following.includes(u.id);card.appendChild(h("p",{class:"body",text:u.bio||"No bio yet."}));
-  card.appendChild(h("div",{class:"row"},[h("button",{class:f?"chip":"btn",onclick:()=>{api.follow(u);render()}},[f?"Unfollow":"Follow"]),h("button",{class:"chip",onclick:()=>go("messages",u.id)},["Message"])]))}
- if(tm.length)card.appendChild(h("div",{class:"row"},tm.map(t=>h("span",{class:"tag",text:t.name}))));
- w.appendChild(card);w.appendChild(h("h2",{text:self?"Your posts":"Posts by "+u.name}));w.appendChild(list);postList(list,()=>db.posts.filter(p=>p.uid===u.id));return w}
-};
-function authView(){const su=authMode==="signup",nm=h("input",{placeholder:"Username","aria-label":"Username"}),em=h("input",{type:"email",placeholder:"Email","aria-label":"Email",autocomplete:"email"}),
- pw=h("input",{type:"password",placeholder:"Password (6+ characters)","aria-label":"Password",autocomplete:su?"new-password":"current-password"}),err=h("p",{class:"err"});
- const sub=async()=>{err.textContent="";const e=su?await api.signup(em.value.trim(),nm.value,pw.value):await api.login(em.value.trim(),pw.value);if(e)err.textContent=e};
- pw.onkeydown=e=>{if(e.key==="Enter")sub()};
- const tabs=h("div",{class:"row",style:"margin:0 0 12px"},[["login","Log in"],["signup","Create account"]].map(a=>chip(a[1],authMode===a[0],()=>{authMode=a[0];render()})));
- return h("section",{class:"card",style:"margin-top:40px"},[h("div",{class:"brand",style:"padding-top:0"},[BRAND[0]+" ",h("span",{text:BRAND[1]})]),h("p",{class:"fine",text:"Share updates, join groups, and message people who share your interests."}),tabs,su?nm:null,em,pw,err,
-  h("button",{class:"btn",onclick:sub},[su?"Create account":"Log in"])])}
-function setup(){$("#app").appendChild(h("section",{class:"card",style:"margin-top:40px"},[h("h2",{text:"Connect Supabase"}),
- h("p",{text:"Open this file in a text editor and set SUPABASE_URL and SUPABASE_KEY at the top of the script. Both are in your Supabase project under Project Settings, API. Use the anon (public) key, never the service-role key."}),
- h("p",{class:"fine",text:"Then run schema.sql once in the Supabase SQL Editor and reload this page."})]))}
-{const r=location.hash.slice(1);if(VIEWS.includes(r))route=r}ready?start():setup();
-</script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>boot()</script>
 </body>
 </html>
