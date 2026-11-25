@@ -93,9 +93,9 @@ select{width:100%;border:1px solid var(--line);border-radius:4px;background:var(
 }
 .tacmap{position:relative}.mapw{position:relative}.tacmap .mapbox{height:min(68vh,620px);min-height:380px}
 .mapbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}.mapbar .chip[aria-pressed="true"]{background:var(--tip);color:var(--ontip)}.minfo{font-size:14px;color:var(--mute)}
-.mapro{position:absolute;left:8px;bottom:8px;z-index:500;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font:500 12px/1.5 ui-monospace,monospace;max-width:calc(100% - 16px);pointer-events:none}
+.mapro{position:absolute;left:110px;bottom:8px;z-index:500;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font:500 12px/1.5 ui-monospace,monospace;max-width:calc(100% - 16px);pointer-events:none}
 .tacmap.full{position:fixed;inset:0;z-index:2000;background:var(--bg);padding:8px;display:flex;flex-direction:column}.tacmap.full .mapw{flex:1;min-height:0}.tacmap.full .mapbox{height:100%;min-height:0}
-body.noscroll{overflow:hidden}.mapbox.measuring{cursor:crosshair}
+body.noscroll{overflow:hidden}.mapbox.measuring{cursor:crosshair}.mapbox.measuring .leaflet-interactive{pointer-events:none}
 .pin span{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2px solid #fff;color:#fff;font:700 13px/1 sans-serif;box-shadow:0 1px 4px #0007}
 .msym svg{filter:drop-shadow(0 1px 2px #0008)}.maplbl{font:600 12px sans-serif;padding:1px 5px}
 </style>
