@@ -19,12 +19,12 @@ Object.assign(api,{
  async createPartner(v){const r=await sb.from("partners").insert({name:v.name,description:v.desc,website:v.website||null,facebook_url:v.fb||null,instagram_url:v.ig||null,active:v.active,display_order:v.order});if(r.error)return r.error.message;await pull();return null},
  async updatePartner(id,v){const r=await sb.from("partners").update({name:v.name,description:v.desc,website:v.website||null,facebook_url:v.fb||null,instagram_url:v.ig||null,active:v.active,display_order:v.order}).eq("id",id).select("id");if(r.error)return r.error.message;if(!r.data||!r.data.length)return"Only admins can change partners.";await pull();return null},
  async deletePartner(id){const r=await sb.from("partners").delete().eq("id",id).select("id");if(r.error)return r.error.message;if(!r.data||!r.data.length)return"Only admins can remove partners.";await pull();return null}});
-let dirTab="listings",dirKind="all",dirVenue="all",dirProv="",dirText="",dirSort="name",dirShow=30,dirEdit=null,dirAdd=false,partnerEdit=null,dirMine=false;
+let dirTab="listings",dirKind="all",dirVenue="all",dirProv="",dirText="",dirSort="near",dirShow=30,dirEdit=null,dirAdd=false,partnerEdit=null,dirMine=false;
 const canEditListing=f=>db.me&&(f.owner===db.me||db.isAdmin);
 const linkRow=(o,extra)=>{const a=[];[["Website",o.website],["Facebook",o.fb],["Instagram",o.ig],["Discord",o.dc]].forEach(([l,u])=>{const s=safeUrl(u);if(s)a.push(h("a",{class:"chip",href:s,target:"_blank",rel:"noopener noreferrer"},[l]))});(extra||[]).forEach(x=>a.push(x));return a.length?h("div",{class:"row links"},a):null};
 const twoClick=(label,fn)=>{const b=h("button",{class:"chip",type:"button",onclick:async()=>{if(!b.dataset.arm){b.dataset.arm=1;b.textContent="Click again to confirm";return}const m=await fn();if(m)flash(m);render()}},[label]);return b};
 const pcShow=f=>f.code&&f.code!=="N/A"?f.code:"";
-function dirListings(){const w=h("div"),list=h("div"),status=h("p",{class:"fine",role:"status"});
+function dirListings(){const w=h("div"),list=h("div",{class:"dirgrid"}),status=h("p",{class:"fine",role:"status"});
  const draw=()=>{list.innerHTML="";
   let l=db.fields.filter(f=>f.published||canEditListing(f));
   if(dirKind!=="all")l=l.filter(f=>f.kind===dirKind);
@@ -34,37 +34,46 @@ function dirListings(){const w=h("div"),list=h("div"),status=h("p",{class:"fine"
   const s=dirText.trim().toLowerCase();if(s)l=l.filter(f=>(f.name+" "+f.city+" "+f.province+" "+f.address).toLowerCase().includes(s));
   const near=dirSort==="near"&&Loc.has();
   l.sort(near?(a,b)=>dist(a)-dist(b):(a,b)=>a.name.localeCompare(b.name));
-  status.textContent=l.length+" listing"+(l.length===1?"":"s")+(s?" matching “"+dirText.trim()+"”":"")+(dirSort==="near"&&!Loc.has()?". Set your postal code on the Events tab to sort by distance.":"")+".";
+  status.textContent=l.length+" listing"+(l.length===1?"":"s")+(s?" matching “"+dirText.trim()+"”":"")+(Loc.has()?(near?", closest to "+Loc.label()+" first":", A to Z"):", A to Z. Set your area to sort by distance")+".";
   if(!l.length)list.appendChild(empty(db.fields.length?"No listings match. Try different filters or add it yourself.":"No listings yet."));
   l.slice(0,dirShow).forEach(f=>list.appendChild(dirCard(f)));
-  if(l.length>dirShow)list.appendChild(h("div",{class:"row"},[h("button",{class:"chip",type:"button",onclick:()=>{dirShow+=30;draw()}},["Show "+Math.min(30,l.length-dirShow)+" more"])]))};
+  if(l.length>dirShow)list.appendChild(h("div",{class:"row span"},[h("button",{class:"chip",type:"button",onclick:()=>{dirShow+=30;draw()}},["Show "+Math.min(30,l.length-dirShow)+" more"])]))};
  const q=h("input",{type:"search","aria-label":"Search the directory",placeholder:"Search by name, city or province",value:dirText});q.oninput=()=>{dirText=q.value;dirShow=30;draw()};
  const prov=h("select",{"aria-label":"Province"},[h("option",{value:"",text:"All provinces"}),...[...new Set(db.fields.map(f=>f.province).filter(Boolean))].sort().map(p=>h("option",{value:p,text:p,selected:p===dirProv?true:null}))]);prov.onchange=()=>{dirProv=prov.value;dirShow=30;draw()};
- const sort=h("select",{"aria-label":"Sort"},[h("option",{value:"name",text:"Sort by name"}),h("option",{value:"near",text:"Sort by distance",selected:dirSort==="near"?true:null})]);sort.onchange=()=>{dirSort=sort.value;draw()};
+ const sort=h("select",{"aria-label":"Sort"},[h("option",{value:"near",text:"Closest first",selected:dirSort==="near"?true:null}),h("option",{value:"name",text:"Name A to Z",selected:dirSort==="name"?true:null})]);sort.onchange=()=>{dirSort=sort.value;draw()};
  const chips=h("div",{class:"row"});
  const cs=()=>{chips.innerHTML="";[["all","all","All"],["field","all","Fields"],["field","outdoor","Outdoor"],["field","indoor","Indoor"],["store","all","Stores"]].forEach(([k,v,t])=>chips.appendChild(chip(t,dirKind===k&&dirVenue===v,()=>{dirKind=k;dirVenue=v;dirShow=30;cs();draw()})));
   if(db.me)chips.appendChild(chip("My listings",dirMine,()=>{dirMine=!dirMine;dirShow=30;cs();draw()}))};cs();
- w.appendChild(reveal("dirsearch","Search and filter",()=>h("div",{},[h("div",{class:"row"},[q]),h("div",{class:"row"},[prov,sort])]),{focus:"input",hide:"Hide search"}));w.appendChild(chips);w.appendChild(status);
- if(dirAdd&&db.me)w.appendChild(listingForm(null));
+ w.appendChild(reveal("dirsearch","Search and filter",()=>h("div",{},[h("div",{class:"row"},[q]),h("div",{class:"row"},[prov,sort])]),{focus:"input",hide:"Hide search"}));w.appendChild(reveal("dirarea",Loc.has()?"Change my area":"Show what’s closest to me",areaPicker,{primary:!Loc.has(),focus:"input",hide:"Cancel"}));w.appendChild(chips);w.appendChild(status);
+ if(dirAdd&&db.me){const lf=listingForm(null);lf.classList.add("span");w.appendChild(lf)}
  w.appendChild(list);draw();return w}
+const kmText=d=>d<1?"Under 1 km":(d<10?d.toFixed(1):String(Math.round(d)))+" km";
 function dirCard(f){
- if(dirEdit===f.id&&canEditListing(f))return listingForm(f);
- const d=dist(f),badges=[h("span",{class:"stat",text:f.kind==="store"?"Store":"Field"})];
- if(f.kind==="field"&&f.venueType)badges.push(h("span",{class:"stat",text:VENUE_LABEL[f.venueType]}));
+ if(dirEdit===f.id&&canEditListing(f)){const e=listingForm(f);e.classList.add("span");return e}
+ const d=dist(f),store=f.kind==="store",badges=[h("span",{class:"stat",text:store?"Store":"Field"})];
+ if(!store&&f.venueType)badges.push(h("span",{class:"stat",text:VENUE_LABEL[f.venueType]}));
  if(f.verified)badges.push(h("span",{class:"stat good",text:"Verified owner"}));else if(f.source)badges.push(h("span",{class:"stat",title:"Listed from "+f.source+". Owners can claim it.",text:"Unclaimed"}));
  if(!f.published)badges.push(h("span",{class:"stat bad",text:"Draft: only you can see it"}));
- if(d!=null)badges.push(h("span",{class:"stat",text:Math.round(d)+" km away"}));
  const place=[f.address||f.city,f.province,f.address?"":pcShow(f)].filter(Boolean).join(", ");
  const dir="https://www.openstreetmap.org/?mlat="+encodeURIComponent(f.lat)+"&mlon="+encodeURIComponent(f.lng)+"#map=15/"+encodeURIComponent(f.lat)+"/"+encodeURIComponent(f.lng);
- const c=h("article",{class:"card dir"},[
-  h("div",{class:"who"},[h("button",{class:"link evt",onclick:()=>{curField=f.id;curMap=null;fieldMode="view";go("maps")}},[f.name]),h("small",{text:place})]),
-  h("div",{class:"row"},badges)]);
- if(f.about)c.appendChild(h("p",{class:"body",text:f.about}));
- const lr=linkRow(f,[h("a",{class:"chip",href:dir,target:"_blank",rel:"noopener noreferrer"},["Open in OpenStreetMap"])]);if(lr)c.appendChild(lr);
- const act=h("div",{class:"row"});
- act.appendChild(h("button",{class:"chip",type:"button",onclick:()=>{curField=f.id;curMap=null;fieldMode="view";go("maps")}},[f.kind==="store"?"Open listing":"Open field and maps"]));
+ const open=()=>{curField=f.id;curMap=null;fieldMode="view";go("maps")};
+ const body=h("div",{class:"dbody"},[h("div",{class:"who"},[h("button",{class:"link evt",onclick:open},[f.name]),h("small",{text:place})]),h("div",{class:"row"},badges)]);
+ if(f.about)body.appendChild(h("p",{class:"body",text:f.about}));
+ const lr=linkRow(f,[h("a",{class:"chip",href:dir,target:"_blank",rel:"noopener noreferrer"},["Open in OpenStreetMap"])]);if(lr)body.appendChild(lr);
+ const act=h("div",{class:"row dact"});
+ act.appendChild(h("button",{class:"chip",type:"button",onclick:open},[store?"Open listing":"Open field and maps"]));
  if(canEditListing(f)){act.appendChild(h("button",{class:"chip",type:"button",onclick:()=>{dirEdit=f.id;dirAdd=false;render()}},["Edit"]));act.appendChild(twoClick("Delete",()=>api.deleteField(f.id)))}
- c.appendChild(act);return c}
+ body.appendChild(act);
+ return h("article",{class:"card dir"},[h("div",{class:"dhead "+(store?"store":"field")},[h("span",{class:"dglyph","aria-hidden":"true",text:f.name.charAt(0).toUpperCase()}),d!=null?h("span",{class:"dpill",text:kmText(d)+" away"}):null]),body])}
+/* Set the area the directory sorts around. Saved on this device, the same area the Events tab uses. */
+function areaPicker(){const pc=h("input",{"aria-label":"Your postal or ZIP code",placeholder:"L6H 0A1 or 90210",maxlength:"10",value:Loc.code}),err=h("p",{class:"err",role:"alert"});
+ const set=g=>{Object.assign(Loc,g);Loc.save();dirSort="near";openBox.dirarea=false;render()};
+ const apply=h("button",{class:"btn",type:"button",onclick:async()=>{err.textContent="";if(!pc.value.trim()){err.textContent="Enter a postal or ZIP code.";return}
+  try{const g=await Geo.geocode(pc.value);set({code:g.code,lat:g.lat,lng:g.lng,city:g.city})}catch(e){err.textContent=e.message}}},["Sort around this area"]);
+ pc.onkeydown=e=>{if(e.key==="Enter")apply.click()};
+ const gb=h("button",{class:"chip",type:"button",onclick:()=>{err.textContent="";if(!navigator.geolocation){err.textContent="Your browser can’t share its location.";return}
+  navigator.geolocation.getCurrentPosition(p=>set({code:"",lat:p.coords.latitude,lng:p.coords.longitude,city:""}),()=>{err.textContent="Couldn’t get your location. Enter a postal code instead."},{timeout:8000})}},["Use my location"]);
+ return h("div",{},[pc,err,h("div",{class:"row"},[apply,gb])])}
 /* Add or edit a listing. Location comes from the postal code unless exact coordinates are given. */
 function listingForm(f){const ed=!!f,err=h("p",{class:"err",role:"alert"});
  const nm=h("input",{"aria-label":"Name",maxlength:"80",value:ed?f.name:""}),kd=h("select",{"aria-label":"Type of listing"},[h("option",{value:"field",text:"Field or venue"}),h("option",{value:"store",text:"Store"})]),
@@ -115,15 +124,16 @@ function partnerForm(p){const ed=!!p,err=h("p",{class:"err",role:"alert"});
   h("div",{class:"grid2"},[field("Display order (lower shows first)",od),h("label",{class:"fld"},[ac," Show on the directory"])]),err,
   h("div",{class:"row",style:"margin-top:0"},[save,h("button",{class:"chip",type:"button",onclick:()=>{partnerEdit=null;render()}},["Cancel"])])])}
 function dirPartners(){const w=h("div"),adm=db.isAdmin;
- if(adm){w.appendChild(h("div",{class:"row"},[h("button",{class:"btn",type:"button",onclick:()=>{partnerEdit="new";render()}},["Add a partner"])]));if(partnerEdit==="new")w.appendChild(partnerForm(null))}
+ if(adm){w.appendChild(h("div",{class:"row"},[h("button",{class:"btn",type:"button",onclick:()=>{partnerEdit="new";render()}},["Add a partner"])]));if(partnerEdit==="new"){const pf=partnerForm(null);w.appendChild(pf)}}
  if(!db.partners.length)w.appendChild(empty("No partners yet."));
- db.partners.forEach(p=>{if(partnerEdit===p.id&&adm){w.appendChild(partnerForm(p));return}
-  const c=h("article",{class:"card dir"},[h("div",{class:"who"},[p.name,!p.active?h("small",{text:"Hidden from the public"}):null])]);
+ const grid=h("div",{class:"dirgrid"});w.appendChild(grid);
+ db.partners.forEach(p=>{if(partnerEdit===p.id&&adm){const pf=partnerForm(p);pf.classList.add("span");grid.appendChild(pf);return}
+  const c=h("div",{class:"dbody"},[h("div",{class:"who"},[p.name,!p.active?h("small",{text:"Hidden from the public"}):null])]);
   if(p.desc)c.appendChild(h("p",{class:"body",text:p.desc}));const lr=linkRow(p);if(lr)c.appendChild(lr);
   if(adm){c.appendChild(h("div",{class:"row"},[h("button",{class:"chip",type:"button",onclick:()=>{partnerEdit=p.id;render()}},["Edit"]),
    h("button",{class:"chip",type:"button",onclick:async()=>{const m=await api.updatePartner(p.id,{name:p.name,desc:p.desc,website:p.website,fb:p.fb,ig:p.ig,order:p.order,active:!p.active});if(m)flash(m);render()}},[p.active?"Hide":"Show"]),
    twoClick("Delete",()=>api.deletePartner(p.id))]))}
-  w.appendChild(c)});
+  grid.appendChild(h("article",{class:"card dir"},[h("div",{class:"dhead partner"},[h("span",{class:"dglyph","aria-hidden":"true",text:p.name.charAt(0).toUpperCase()})]),c]))});
  return w}
 registerView("directory","Directory",()=>{const w=h("div"),body=h("div");
  const tabs=h("div",{class:"row"}),draw=()=>{tabs.innerHTML="";tabs.appendChild(chip("Listings",dirTab==="listings",()=>{dirTab="listings";render()}));tabs.appendChild(chip("Partners",dirTab==="partners",()=>{dirTab="partners";render()}))};draw();
