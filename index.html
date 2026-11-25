@@ -62,6 +62,18 @@ select{width:100%;border:1px solid var(--line);border-radius:4px;background:var(
 .qr{background:#fff;padding:8px;border-radius:6px;width:fit-content}.qr img{display:block;width:176px;height:176px}
 .code{font-family:ui-monospace,Menlo,monospace;overflow-wrap:anywhere;font-size:14px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}@media(max-width:480px){.grid2{grid-template-columns:1fr}}
+.stat.good{color:var(--od);border-color:var(--od)}.stat.bad{color:var(--tip);border-color:var(--tip)}
+.evt{font-size:18px;text-align:left}.ev .row{margin-top:6px}.note-box{border-left:3px solid var(--tip);padding:6px 10px;margin:8px 0;background:var(--bg);border-radius:0 4px 4px 0;overflow-wrap:anywhere}
+.regrow{border-top:1px solid var(--line);padding-top:6px}.fcard{width:100%;text-align:left}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:12px}.dow{text-align:center;color:var(--mute);font-size:13px}
+.day{position:relative;aspect-ratio:1;background:var(--card);border:1px solid var(--line);border-radius:4px;color:var(--ink);font:500 14px Barlow,sans-serif;cursor:pointer;padding:0}
+.day.off{background:transparent;border-color:transparent;cursor:default}.day.today{border-color:var(--tip)}.day.has{font-weight:700}.day.sel{background:var(--od);color:var(--onod);border-color:var(--od)}
+.dot{position:absolute;right:3px;bottom:2px;font-size:11px;background:var(--tip);color:var(--ontip);border-radius:999px;min-width:16px;line-height:16px;text-align:center;padding:0 3px}
+.mapbox{height:360px;border:1px solid var(--line);border-radius:6px;background:var(--card);display:grid;place-items:center;color:var(--mute)}
+.mapbox.leaflet-container{display:block}.legend{margin:8px 0}.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+.featrow select{width:auto;flex:1 1 140px;margin:0}.featrow input{flex:2 1 140px;margin:0}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.big{background:var(--bg);border-radius:6px;padding:8px}.big small{display:block;color:var(--mute)}.big b{font:700 18px Barlow,sans-serif}
+.tbl{width:100%;border-collapse:collapse;font-size:15px}.tbl th,.tbl td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}.pos{color:var(--od)}.neg{color:var(--tip)}.ledg{align-items:center}
 </style>
 </head>
 <body>
@@ -70,6 +82,10 @@ select{width:100%;border:1px solid var(--line);border-radius:4px;background:var(
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
+<script src="events.js"></script>
+<script src="maps.js"></script>
+<script src="finance.js"></script>
+<script src="settings.js"></script>
 <script>boot()</script>
 </body>
 </html>
