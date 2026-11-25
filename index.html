@@ -234,6 +234,26 @@ textarea{border-radius:14px;min-height:64px}
  .nav:hover .hdr .brand .bm,.nav:focus-within .hdr .brand .bm{height:100%}
  .hdr .brand .bf{padding-left:6px}
 }
+
+/* Polls */
+[hidden]{display:none!important}
+.poll header{display:flex;gap:10px;align-items:flex-start}
+.card>.who{margin-bottom:10px}.pprev .pq{margin-top:10px}
+.pq{font:700 19px/1.3 Barlow,sans-serif;margin:12px 0 6px;overflow-wrap:anywhere}
+.popts{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.popt{position:relative;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--bg);overflow:hidden;cursor:default;min-height:44px}
+label.popt{cursor:pointer}label.popt:hover{background:var(--hov)}
+.popt.on{outline:2px solid var(--tip)}
+.popt input{width:auto;margin:0;flex:none;accent-color:var(--tip)}
+.pbar{position:absolute;inset:0 auto 0 0;background:color-mix(in srgb,var(--tip) 22%,transparent);transition:width .4s ease;pointer-events:none}
+.popt.win .pbar{background:color-mix(in srgb,var(--tip) 38%,transparent)}
+.plab{position:relative;flex:1;min-width:0;overflow-wrap:anywhere;font-weight:600}
+.pct,.pmine{position:relative;flex:none;font-size:14px;color:var(--mute);font-weight:600}.pmine{color:var(--tip)}
+.brow{display:flex;gap:6px;align-items:center;margin-bottom:8px}.brow input{margin:0;flex:1}.brow .chip{flex:none}
+.pset{display:grid;gap:4px;margin:12px 0}.chk{display:flex;align-items:center;gap:8px;cursor:pointer}.chk input{width:auto;margin:0;accent-color:var(--tip)}
+.pset select,.pset input[type="datetime-local"]{margin-bottom:4px}
+.pprev{border:1px dashed var(--line);border-radius:12px;padding:6px 14px 10px;margin-top:8px}
+@media(prefers-reduced-motion:reduce){.pbar{transition:none}}
 </style>
 </head>
 <body>
@@ -246,6 +266,7 @@ textarea{border-radius:14px;min-height:64px}
 <script src="maps.js"></script>
 <script src="importer.js"></script>
 <script src="claims.js"></script>
+<script src="polls.js"></script>
 <script src="finance.js"></script>
 <script src="settings.js"></script>
 <script src="boot.js"></script>

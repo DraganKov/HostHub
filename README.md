@@ -13,6 +13,9 @@ Built entirely on open source: Supabase (Postgres, Auth, Realtime), Leaflet and 
 ## Maps
 Field owners draw the playing area and any number of game-mode layers: zones, out-of-bounds areas, routes, phase lines, range rings, objectives, spawns and NATO-style unit symbols (milsymbol). Viewers get street, topo and satellite basemaps, a measure tool, live lat/lng and MGRS (mgrs) readout, find-me, full screen, and KML/GeoJSON export. KML opens in ATAK and Google Earth; owners can import KML or GeoJSON.
 
+## Polls
+Any member can build a poll: 2 to 10 choices, single or multiple choice (with a cap), optional close time (up to 90 days), optional member-added choices, and a results rule (always, after voting, or after closing) that the database enforces. A live preview shows what voters will see. Authors can close or delete their polls. Run migration 0011 first.
+
 ## Importing listings
 Admins can bulk-import fields and stores (CSV, JSON, GeoJSON or KML) from the Maps tab. Listings without coordinates are placed by postal code, duplicates (same name and postal code) are skipped, and each import is credited to a source name.
 
