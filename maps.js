@@ -98,7 +98,7 @@ Object.assign(api,{
 });
 /* ===== Views ===== */
 function fieldCard(f){const n=db.maps.filter(m=>m.fieldId===f.id).length,d=dist(f);
- return h("button",{class:"card thr fcard",onclick:()=>{curField=f.id;curMap=null;fieldMode="view";render()}},[h("div",{class:"who"},[f.name,h("small",{text:(!f.published?"DRAFT · ":fieldHidden(f)?"HIDDEN BY VOTES · ":"")+(f.kind==="store"?"STORE · ":"")+(f.verified?"VERIFIED OWNER · ":f.source?"UNCLAIMED · ":"")+[f.city,f.code].filter(Boolean).join(", ")+(d!=null?" · "+Math.round(d)+" km away":"")+" · "+n+(n===1?" game mode":" game modes")})])])}
+ return h("button",{class:"card thr fcard",onclick:()=>{curField=f.id;curMap=null;fieldMode="view";render()}},[h("div",{class:"fthumb","aria-hidden":"true",text:f.kind==="store"?"S":"F"}),h("div",{class:"who"},[f.name,h("small",{text:(!f.published?"DRAFT · ":fieldHidden(f)?"HIDDEN BY VOTES · ":"")+(f.kind==="store"?"STORE · ":"")+(f.verified?"VERIFIED OWNER · ":f.source?"UNCLAIMED · ":"")+[f.city,f.code].filter(Boolean).join(", ")+(d!=null?" · "+Math.round(d)+" km away":"")+" · "+n+(n===1?" game mode":" game modes")})])])}
 function fieldForm(done){const nm=h("input",{"aria-label":"Field name",maxlength:"80",placeholder:"Field name"}),ab=h("textarea",{"aria-label":"About the field",maxlength:"1000",placeholder:"Terrain, rules, parking, what to bring"}),
  pc=h("input",{"aria-label":"Postal code",placeholder:"L6H 0A1 or 90210",maxlength:"10"}),err=h("p",{class:"err",role:"alert"}),
  kd=h("select",{"aria-label":"Listing type"},[h("option",{value:"field",text:"Playing field"}),h("option",{value:"store",text:"Store or shop"})]),

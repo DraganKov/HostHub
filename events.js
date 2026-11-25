@@ -90,8 +90,10 @@ function eventCard(e,again){const mine=db.me===e.host,reg=myReg(e),d=dist(e),f=d
  if(reg)badges.unshift(h("span",{class:"stat good",text:reg.paid?"Registered · paid":(e.prepay?"Registered · payment pending":"Registered")}));
  if(mine)badges.unshift(h("span",{class:"stat good",text:"You’re hosting"}));
  const c=h("article",{class:"card ev"},[
-  h("button",{class:"link evt","aria-expanded":String(open),onclick:()=>{openE[e.id]=!openE[e.id];again()}},[e.title]),
-  h("div",{class:"fine",text:fmtWhen(e.start,e.end)}),h("div",{class:"fine",text:[e.venue,e.city,e.code].filter(Boolean).join(", ")}),h("div",{class:"row"},badges)]);
+  h("div",{class:"evtop"},[h("div",{class:"dtile","aria-hidden":"true"},[h("b",{text:new Date(e.start).toLocaleDateString(undefined,{day:"numeric"})}),h("small",{text:new Date(e.start).toLocaleDateString(undefined,{month:"short"})})]),
+   h("div",{class:"evmain"},[h("button",{class:"link evt","aria-expanded":String(open),onclick:()=>{openE[e.id]=!openE[e.id];again()}},[e.title]),
+    h("div",{class:"fine",text:fmtWhen(e.start,e.end)}),h("div",{class:"fine",text:[e.venue,e.city,e.code].filter(Boolean).join(", ")})])]),
+  h("div",{class:"row"},badges)]);
  if(!open)return c;
  c.appendChild(h("p",{class:"body",text:e.desc||"No description."}));
  const hostRow=[h("small",{class:"fine",text:"Hosted by "}),nameBtn(e.host)];
