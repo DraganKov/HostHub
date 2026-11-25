@@ -16,6 +16,13 @@ Field owners draw the playing area and any number of game-mode layers: zones, ou
 ## Importing listings
 Admins can bulk-import fields and stores (CSV, JSON, GeoJSON or KML) from the Maps tab. Listings without coordinates are placed by postal code, duplicates (same name and postal code) are skipped, and each import is credited to a source name.
 
+## Security
+- Every table has row-level security. Clients can only change content columns; rep, scores, capacity counts, paid flags, publishing state, verified owner and admin rights are changed only by database functions.
+- Two-factor sign-in is enforced by the database for every write once a user turns it on. Posts, comments, messages and groups have per-person rate limits (migration 0010).
+- The page ships a Content-Security-Policy (index.html) and pinned, integrity-checked libraries. **Self-hosting:** change `bbrlqxfenmmrffvsgdpr.supabase.co` in the CSP `connect-src` to your own Supabase address, and update an integrity hash whenever you change a library version.
+- Third parties the browser contacts: Supabase, the map tile servers (OpenStreetMap, OpenTopoMap, Esri) and zippopotam.us (postal code lookup). They can see a visitor's IP address; none receive account details.
+- In the Supabase dashboard (not settable from code): require a minimum password length of 10, turn on leaked-password protection (Pro plan), add CAPTCHA on sign-up, and restrict redirect URLs to your site. Keep the service-role key out of the repo; it is only used by the alert function, along with `CRON_SECRET`.
+
 ## Privacy
 Usernames only. Email, phone and home postal code are private to the account. Alert settings are visible only to their owner.
 

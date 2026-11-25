@@ -3,11 +3,15 @@
 const LF={js:"https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js",css:"https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css",
  djs:"https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js",dcss:"https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css",
  ms:"https://cdn.jsdelivr.net/npm/milsymbol@2.2.0/dist/milsymbol.js",mgrs:"https://cdn.jsdelivr.net/npm/mgrs@1.0.0/dist/mgrs.js"};
+/* Subresource Integrity: the browser refuses these libraries if the CDN ever serves different bytes. Update a hash when you change a version. */
+const SRI={[LF.js]:"sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH",[LF.css]:"sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H",
+ [LF.djs]:"sha384-JP5UPxIO2Tm2o79Fb0tGYMa44jkWar53aBoCbd8ah0+LcCDoohTIYr+zIXyfGIJN",[LF.dcss]:"sha384-NZLkVuBRMEeB4VeZz27WwTRvlhec30biQ8Xx7zG7JJnkvEKRg5qi6BNbEXo9ydwv",
+ [LF.ms]:"sha384-nBeSn7MTFykY3q7Irc8DaMFNJsqvJE1xMmD74ebMBp8ZK6QTtcooJ6Yb8+62w8ur",[LF.mgrs]:"sha384-Vc5FnKUcRBV6CdFHk75c9G1+FBRVd2BSD6txVIXP6t7+FLRM2OAj7B8Kmo8Xqn3d"};
 let lfPromise=null;
 /* Leaflet (maps) + Leaflet.draw (drawing) are required. milsymbol (NATO-style unit symbols) and mgrs (military grid references) are optional extras. */
 function loadLeaflet(){if(window.L&&L.Control&&L.Control.Draw)return Promise.resolve();if(lfPromise)return lfPromise;
- const css=u=>{const l=document.createElement("link");l.rel="stylesheet";l.href=u;document.head.appendChild(l)};
- const js=u=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=u;s.onload=ok;s.onerror=()=>no(new Error("Could not load the map library."));document.head.appendChild(s)});
+ const css=u=>{const l=document.createElement("link");l.rel="stylesheet";l.href=u;if(SRI[u]){l.integrity=SRI[u];l.crossOrigin="anonymous"}document.head.appendChild(l)};
+ const js=u=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=u;if(SRI[u]){s.integrity=SRI[u];s.crossOrigin="anonymous"}s.onload=ok;s.onerror=()=>no(new Error("Could not load the map library."));document.head.appendChild(s)});
  const opt=u=>js(u).catch(()=>null);
  css(LF.css);css(LF.dcss);lfPromise=js(LF.js).then(()=>js(LF.djs)).then(()=>Promise.all([opt(LF.ms),opt(LF.mgrs)])).catch(e=>{lfPromise=null;throw e});return lfPromise}
 /* Feature kinds. shape: area (polygon), line, point, ring (circle with a radius in metres). */

@@ -201,8 +201,8 @@ registerView("profile","Profile",()=>{const u=api.user(viewUid||db.me);
  w.appendChild(h("h2",{text:self?"Your posts":"Posts by "+u.name}));w.appendChild(list);postList(list,()=>db.posts.filter(p=>p.uid===u.id));return w},{pos:100,userNav:true});
 /* ===== Accounts: password, OAuth, two-factor ===== */
 function authView(){const su=authMode==="signup",nm=h("input",{placeholder:"Username (public)","aria-label":"Username"}),em=h("input",{type:"email",placeholder:"Email (never shown to others)","aria-label":"Email",autocomplete:"email"}),
- pw=h("input",{type:"password",placeholder:"Password (6+ characters)","aria-label":"Password",autocomplete:su?"new-password":"current-password"}),err=h("p",{class:"err",role:"alert"}),info=h("p",{class:"ok",role:"status"});
- const sub=async()=>{err.textContent=info.textContent="";const r=su?await api.signup(em.value.trim(),nm.value,pw.value):await api.login(em.value.trim(),pw.value);if(r.error)err.textContent=r.error;else if(r.info)info.textContent=r.info};
+ pw=h("input",{type:"password",placeholder:su?"Password (10+ characters)":"Password","aria-label":"Password",autocomplete:su?"new-password":"current-password"}),err=h("p",{class:"err",role:"alert"}),info=h("p",{class:"ok",role:"status"});
+ const sub=async()=>{err.textContent=info.textContent="";if(su&&pw.value.length<10){err.textContent="Use a password of at least 10 characters.";return}const r=su?await api.signup(em.value.trim(),nm.value,pw.value):await api.login(em.value.trim(),pw.value);if(r.error)err.textContent=r.error;else if(r.info)info.textContent=r.info};
  pw.onkeydown=e=>{if(e.key==="Enter")sub()};
  const tabs=h("div",{class:"row",style:"margin:0 0 12px"},[["login","Log in"],["signup","Create account"]].map(a=>chip(a[1],authMode===a[0],()=>{authMode=a[0];render()})));
  const oa=(C.OAUTH||[]).map(p=>h("button",{class:"btn alt",type:"button",onclick:async()=>{const r=await api.oauth(p);if(r.error)err.textContent=r.error}},["Continue with "+p.charAt(0).toUpperCase()+p.slice(1)]));
