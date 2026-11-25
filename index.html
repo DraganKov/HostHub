@@ -168,6 +168,35 @@ textarea{border-radius:14px;min-height:64px}
  .wrap{max-width:700px;margin:0 auto}
  .shell.solo .wrap{margin:0 auto}
 }
+
+/* Collapsible sidebar: an icon rail that slides open over the page on hover or keyboard focus (devices with a mouse only). */
+.accmini{display:none}
+@media (min-width:800px) and (hover:hover){
+ .shell:not(.solo){grid-template-columns:68px minmax(0,1fr)}
+ .nav{overflow:visible;z-index:30;border-right:0}
+ .nav .in{position:absolute;left:0;top:0;bottom:0;width:68px;min-height:0;padding:8px 10px 14px;overflow:hidden;background:var(--side);border-right:1px solid var(--line);
+  transition:width .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s ease}
+ .nav:hover .in,.nav:focus-within .in{width:240px;padding:8px 16px 14px;box-shadow:8px 0 24px rgba(0,0,0,.18)}
+ .brand{display:flex;align-items:center;white-space:nowrap;height:46px;padding:0}
+ .brand .bm{flex:none;width:48px;font-size:20px;text-align:center;color:var(--tip)}
+ .brand .bf{opacity:0;transition:opacity .15s ease;margin-left:-4px}
+ .tab{padding:10px 13px;white-space:nowrap}
+ .tab .tl,.tab .badge{transition:opacity .15s ease}
+ .tab .badge{position:absolute;top:4px;left:30px;margin:0}.tab{position:relative}
+ .nav .in:not(:hover):not(:focus-within) .tl,.nav:not(:hover):not(:focus-within) .in .bf{opacity:0}
+ .nav:hover .bf,.nav:focus-within .bf{opacity:1;transition-delay:.08s}
+ .nav:hover .tab .badge,.nav:focus-within .tab .badge{position:static;margin-left:4px}
+ .accwrap{position:relative;white-space:nowrap}
+ .accwrap>*:not(.accmini){display:none}
+ .accwrap{background:none;padding:0}
+ .accmini{display:grid;place-items:center;width:48px;height:48px;background:none;border:0;padding:0;cursor:pointer;color:var(--mute);border-radius:10px}
+ .accmini:hover{background:var(--hov)}.accmini .av{width:36px;height:36px;font-size:15px}.accmini .ico{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8}
+ .nav:hover .accwrap,.nav:focus-within .accwrap{background:var(--bg);padding:10px 12px}
+ .nav:hover .accwrap>*:not(.accmini),.nav:focus-within .accwrap>*:not(.accmini){display:flex}
+ .nav:hover .accmini,.nav:focus-within .accmini{display:none}
+ .nav:hover .acct .me,.nav:focus-within .acct .me{display:flex}
+}
+@media (prefers-reduced-motion:reduce){.nav .in,.brand .bf,.tab .tl{transition:none!important}}
 </style>
 </head>
 <body>
