@@ -43,12 +43,12 @@ db.events=[];db.regs=[];db.payinfo={};db.fields=[];db.maps=[];db.settings=null;d
 pullHooks.push(async()=>{
  const since=new Date(Date.now()-864e5).toISOString();
  const [ev,fi,fm]=await Promise.all([sb.from("events").select("*").gte("starts_at",since).order("starts_at").limit(500),
-  sb.from("fields").select("id,owner,name,about,postal_code,city,lat,lng,created_at,published,post_id,reviewed"),sb.from("field_maps").select("id,field_id,name,notes,updated_at")]);
+  sb.from("fields").select("id,owner,name,about,postal_code,city,lat,lng,created_at,published,post_id,reviewed,kind,address,website,source"),sb.from("field_maps").select("id,field_id,name,notes,updated_at")]);
  const bad=[ev,fi,fm].find(x=>x.error);if(bad)throw bad.error;
  let rg={data:[]},pi={data:[]},st={data:[]},ad={data:[]};
  if(db.me){[rg,pi,st,ad]=await Promise.all([sb.from("registrations").select("*"),sb.from("event_private").select("*"),sb.from("user_settings").select("*").eq("user_id",db.me),sb.from("admins").select("user_id").eq("user_id",db.me)])}
  db.events=ev.data.map(e=>({id:e.id,host:e.host,fieldId:e.field_id,mapId:e.map_id,title:e.title,desc:e.description||"",start:T(e.starts_at),end:e.ends_at?T(e.ends_at):null,venue:e.venue||"",code:e.postal_code,city:e.city||"",lat:e.lat,lng:e.lng,cap:e.capacity,price:e.price_cents||0,prepay:!!e.prepay_required,regCount:e.reg_count||0,cancelled:!!e.cancelled}));
- db.fields=fi.data.map(f=>({id:f.id,owner:f.owner,name:f.name,about:f.about||"",code:f.postal_code,city:f.city||"",lat:f.lat,lng:f.lng,published:!!f.published,postId:f.post_id||null,reviewed:!!f.reviewed}));
+ db.fields=fi.data.map(f=>({id:f.id,owner:f.owner,name:f.name,about:f.about||"",code:f.postal_code,city:f.city||"",lat:f.lat,lng:f.lng,published:!!f.published,postId:f.post_id||null,reviewed:!!f.reviewed,kind:f.kind||"field",address:f.address||"",website:f.website||"",source:f.source||""}));
  db.maps=fm.data.map(m=>({id:m.id,fieldId:m.field_id,name:m.name,notes:m.notes||""}));
  db.regs=(rg.data||[]).map(r=>({eventId:r.event_id,userId:r.user_id,paid:!!r.paid}));
  db.payinfo={};(pi.data||[]).forEach(p=>db.payinfo[p.event_id]=p.payment_info);

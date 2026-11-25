@@ -77,13 +77,13 @@ function cleanImport(gj,isB){const shapeOfG={Point:"point",LineString:"line",Pol
   else{if(!KINDS[kind]||KINDS[kind].shape!==sh||kind==="boundary")kind=DEFAULT_KIND[sh]==="ring"?"marker":DEFAULT_KIND[sh];if(kind==="ring"&&!radius)kind="marker"}
   out.push({type:"Feature",properties:Object.assign({kind,label:String(p.label||"").slice(0,60)},kind==="ring"?{radius}:{}),geometry:g})});
  return{gj:{type:"FeatureCollection",features:out.slice(0,200)},skipped:skipped+Math.max(0,out.length-200)}}
-let curField=null,curMap=null,fieldMode="view",activeMap=null,fieldFormOpen=false,fieldQ="";
+let kindQ="all";let curField=null,curMap=null,fieldMode="view",activeMap=null,fieldFormOpen=false,fieldQ="";
 const geoCache={};
 /* ===== Data helpers ===== */
 Object.assign(api,{
  async fieldBoundary(id){if(geoCache["b"+id]!==undefined)return geoCache["b"+id];const r=await sb.from("fields").select("boundary").eq("id",id).single();geoCache["b"+id]=(r.data&&r.data.boundary)||null;return geoCache["b"+id]},
  async mapGeo(id){if(geoCache["m"+id])return geoCache["m"+id];const r=await sb.from("field_maps").select("geojson").eq("id",id).single();geoCache["m"+id]=(r.data&&r.data.geojson)||EMPTY;return geoCache["m"+id]},
- async createField(v){const id=rid(),r=await sb.from("fields").insert({id,name:v.name,about:v.about,postal_code:v.code,city:v.city,lat:v.lat,lng:v.lng});if(r.error)return{error:r.error.message};await pull();return{id}},
+ async createField(v){const id=rid(),r=await sb.from("fields").insert({id,name:v.name,about:v.about,postal_code:v.code,city:v.city,lat:v.lat,lng:v.lng,kind:v.kind||"field",address:v.address||"",website:v.website||null});if(r.error)return{error:r.error.message};await pull();return{id}},
  async saveBoundary(id,gj){const r=await sb.from("fields").update({boundary:gj}).eq("id",id);if(r.error)return r.error.message;geoCache["b"+id]=gj;return null},
  async createMap(fid,name,notes){const id=rid(),r=await sb.from("field_maps").insert({id,field_id:fid,name,notes});if(r.error)return{error:/duplicate|unique/i.test(r.error.message)?"This field already has a game mode with that name.":r.error.message};await pull();return{id}},
  async saveMapGeo(id,gj){const r=await sb.from("field_maps").update({geojson:gj}).eq("id",id);if(r.error)return r.error.message;geoCache["m"+id]=gj;return null},
@@ -94,20 +94,23 @@ Object.assign(api,{
 });
 /* ===== Views ===== */
 function fieldCard(f){const n=db.maps.filter(m=>m.fieldId===f.id).length,d=dist(f);
- return h("button",{class:"card thr fcard",onclick:()=>{curField=f.id;curMap=null;fieldMode="view";render()}},[h("div",{class:"who"},[f.name,h("small",{text:(!f.published?"DRAFT · ":fieldHidden(f)?"HIDDEN BY VOTES · ":"")+[f.city,f.code].filter(Boolean).join(", ")+(d!=null?" · "+Math.round(d)+" km away":"")+" · "+n+(n===1?" game mode":" game modes")})])])}
+ return h("button",{class:"card thr fcard",onclick:()=>{curField=f.id;curMap=null;fieldMode="view";render()}},[h("div",{class:"who"},[f.name,h("small",{text:(!f.published?"DRAFT · ":fieldHidden(f)?"HIDDEN BY VOTES · ":"")+(f.kind==="store"?"STORE · ":"")+[f.city,f.code].filter(Boolean).join(", ")+(d!=null?" · "+Math.round(d)+" km away":"")+" · "+n+(n===1?" game mode":" game modes")})])])}
 function fieldForm(done){const nm=h("input",{"aria-label":"Field name",maxlength:"80",placeholder:"Field name"}),ab=h("textarea",{"aria-label":"About the field",maxlength:"1000",placeholder:"Terrain, rules, parking, what to bring"}),
- pc=h("input",{"aria-label":"Postal code",placeholder:"L6H 0A1 or 90210",maxlength:"10"}),err=h("p",{class:"err",role:"alert"});
- const b=h("button",{class:"btn",onclick:async()=>{err.textContent="";const name=nm.value.trim();if(name.length<2){err.textContent="Give the field a name.";return}
+ pc=h("input",{"aria-label":"Postal code",placeholder:"L6H 0A1 or 90210",maxlength:"10"}),err=h("p",{class:"err",role:"alert"}),
+ kd=h("select",{"aria-label":"Listing type"},[h("option",{value:"field",text:"Playing field"}),h("option",{value:"store",text:"Store or shop"})]),
+ ad=h("input",{"aria-label":"Street address",maxlength:"200",placeholder:"Street address (optional)"}),wb=h("input",{"aria-label":"Website",maxlength:"300",placeholder:"https://… (optional)"});
+ const b=h("button",{class:"btn",onclick:async()=>{err.textContent="";const name=nm.value.trim();if(name.length<2){err.textContent="Give it a name.";return}
+  let web=wb.value.trim();if(web&&!/^https?:\/\//i.test(web))web="https://"+web;if(web&&!/^https?:\/\/[^\s]+$/i.test(web)){err.textContent="That website address doesn’t look right.";return}
   let g;try{b.disabled=true;g=await Geo.geocode(pc.value)}catch(e){err.textContent=e.message;b.disabled=false;return}
-  const r=await api.createField({name,about:ab.value.trim(),code:g.code,city:g.city,lat:g.lat,lng:g.lng});b.disabled=false;
-  if(r.error){err.textContent="Could not add the field. "+r.error;return}curField=r.id;curMap=null;fieldMode="boundary";fieldFormOpen=false;flash("Saved as a draft. Draw the playing area, then publish.");render()}},["Add field"]);
- return h("section",{class:"card"},[h("div",{class:"who"},["Add your field"]),h("p",{class:"fine",text:"You’ll be the field owner. Next you’ll draw the playing area and can add game-mode maps. Nothing is public until you publish, which posts the field to the feed for your postal or ZIP code."}),field("Name",nm),field("About",ab),field("Postal or ZIP code",pc),err,
+  const r=await api.createField({name,about:ab.value.trim(),code:g.code,city:g.city,lat:g.lat,lng:g.lng,kind:kd.value,address:ad.value.trim(),website:web||null});b.disabled=false;
+  if(r.error){err.textContent="Could not add the field. "+r.error;return}curField=r.id;curMap=null;fieldMode=kd.value==="field"?"boundary":"view";fieldFormOpen=false;flash(kd.value==="field"?"Saved as a draft. Draw the playing area, then publish.":"Saved as a draft. Publish it when you’re ready.");render()}},["Add field"]);
+ return h("section",{class:"card"},[h("div",{class:"who"},["Add a field or store"]),h("p",{class:"fine",text:"You’ll be the field owner. Next you’ll draw the playing area and can add game-mode maps. Nothing is public until you publish, which posts it to the feed for your postal or ZIP code. Stores skip the playing area."}),field("Type",kd),field("Name",nm),field("About",ab),field("Postal or ZIP code",pc),field("Address",ad),field("Website",wb),err,
   h("div",{class:"row",style:"margin-top:0"},[b,h("button",{class:"chip",onclick:done},["Cancel"])])])}
 registerView("maps","Maps",()=>{if(activeMap){try{activeMap.remove()}catch(e){}activeMap=null}
  const f=db.fields.find(x=>x.id===curField);if(f)return fieldView(f);
  const w=h("div"),list=h("div"),tx=h("input",{"aria-label":"Search fields",placeholder:"Search fields by name or city",value:fieldQ});
  const dl=()=>{list.innerHTML="";const s=fieldQ.trim().toLowerCase();
-  let l=db.fields.filter(x=>!s||(x.name+" "+x.city+" "+x.about).toLowerCase().includes(s));
+  let l=db.fields.filter(x=>(kindQ==="all"||x.kind===kindQ)&&(!s||(x.name+" "+x.city+" "+x.about+" "+x.address).toLowerCase().includes(s)));
   if(Loc.has()&&Loc.radius>0&&!s)l=l.filter(x=>dist(x)<=Loc.radius||x.owner===db.me);
   l=l.sort((a,b)=>(dist(a)??1e9)-(dist(b)??1e9)||a.name.localeCompare(b.name));
   if(!l.length)list.appendChild(empty(Loc.has()&&Loc.radius>0&&!s?"No fields within "+Loc.radius+" km of "+Loc.label()+". Change your area on the Events tab, or search by name.":"No fields yet. Field owners can add theirs above."));
@@ -115,24 +118,28 @@ registerView("maps","Maps",()=>{if(activeMap){try{activeMap.remove()}catch(e){}a
  tx.oninput=()=>{fieldQ=tx.value;dl()};
  w.appendChild(h("div",{class:"row",style:"margin:0 0 8px"},[h("h2",{style:"margin:0",text:"Fields and maps"}),h("span",{class:"sp"}),h("button",{class:"btn",onclick:need("add a field",()=>{fieldFormOpen=true;render()})},["Add a field"])]));
  if(fieldFormOpen&&db.me)w.appendChild(fieldForm(()=>{fieldFormOpen=false;render()}));
- w.appendChild(tx);dl();w.appendChild(list);return w},{pos:40});
+ const kf=h("div",{class:"filters"}),dk=()=>{kf.innerHTML="";[["all","All"],["field","Fields"],["store","Stores"]].forEach(([k,t])=>kf.appendChild(chip(t,kindQ===k,()=>{kindQ=k;dk();dl()})))};dk();
+ if(db.isAdmin&&typeof importCard==="function")w.appendChild(importCard());
+ w.appendChild(tx);w.appendChild(kf);dl();w.appendChild(list);return w},{pos:40});
 function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m=>m.fieldId===f.id),msg=h("p",{class:"err",role:"alert"}),cur=maps.find(m=>m.id===curMap);
  const box=h("div",{class:"mapbox",role:"region","aria-label":"Map of "+f.name}),ro=h("div",{class:"mapro","aria-live":"off"},["Move the pointer over the map for coordinates"]),bar=h("div",{class:"mapbar"}),
   mapw=h("div",{class:"mapw"},[box,ro]),wrap=h("div",{class:"tacmap"},[mapw,bar]),editing=own&&(fieldMode==="boundary"||(fieldMode==="map"&&cur));
  w.appendChild(h("div",{class:"row",style:"margin:0 0 8px"},[h("button",{class:"chip",onclick:()=>{curField=null;curMap=null;render()}},["All fields"]),h("h2",{style:"margin:0",text:f.name})]));
- w.appendChild(h("div",{class:"fine",text:[f.city,f.code].filter(Boolean).join(", ")}));
+ w.appendChild(h("div",{class:"fine",text:(f.kind==="store"?"Store · ":"")+[f.address,f.city,f.code].filter(Boolean).join(", ")}));
+ if(f.website&&/^https?:\/\//.test(f.website))w.appendChild(h("div",{class:"fine"},[h("a",{href:f.website,target:"_blank",rel:"noopener noreferrer nofollow",text:f.website.replace(/^https?:\/\/(www\.)?/,"").slice(0,60)})]));
+ if(f.source)w.appendChild(h("div",{class:"fine",text:"Listing imported from "+f.source+"."}));
  w.appendChild(h("div",{class:"row",style:"margin-top:0"},[h("small",{class:"fine",text:"Run by "}),nameBtn(f.owner)]));
  if(f.about)w.appendChild(h("p",{class:"body",text:f.about}));
- w.appendChild(h("div",{class:"filters"},[chip("Playing area",!cur,()=>{curMap=null;fieldMode="view";render()}),...maps.map(m=>chip(m.name,curMap===m.id,()=>{curMap=m.id;fieldMode="view";render()}))]));
+ if(f.kind!=="store")w.appendChild(h("div",{class:"filters"},[chip("Playing area",!cur,()=>{curMap=null;fieldMode="view";render()}),...maps.map(m=>chip(m.name,curMap===m.id,()=>{curMap=m.id;fieldMode="view";render()}))]));
  const setup=h("div");
  const hasB=b=>!!(b&&b.features&&b.features.length);
  const step=(n,done,title,detail,action)=>h("div",{class:"row step"},[h("span",{class:"stat"+(done?" good":""),text:done?"✓":String(n)}),h("div",{class:"who"},[title,h("small",{text:detail})]),h("span",{class:"sp"}),action]);
  const drawSetup=b=>{setup.innerHTML="";if(!own||f.published||editing)return;
-  const ok=hasB(b),nm=maps.length,pubErr=h("p",{class:"err",role:"alert"}),pb=h("button",{class:"btn",disabled:ok?null:true,onclick:async()=>{pubErr.textContent="";pb.disabled=true;const e=await api.publishField(f.id);if(e){pubErr.textContent=e;pb.disabled=false;return}flash("Published. It’s now in the feed for "+(f.code||"your area")+".");render()}},["Publish field"]);
+  const store=f.kind==="store",ok=store||hasB(b),nm=maps.length,pubErr=h("p",{class:"err",role:"alert"}),pb=h("button",{class:"btn",disabled:ok?null:true,onclick:async()=>{pubErr.textContent="";pb.disabled=true;const e=await api.publishField(f.id);if(e){pubErr.textContent=e;pb.disabled=false;return}flash("Published. It’s now in the feed for "+(f.code||"your area")+".");render()}},["Publish field"]);
   setup.appendChild(h("section",{class:"card"},[h("div",{class:"who"},["Set up your field",h("small",{text:"Draft: only you can see it until you publish."})]),
    step(1,true,"Field details",[f.city,f.code].filter(Boolean).join(", "),null),
-   step(2,ok,"Playing area",ok?"Drawn":"Required. Draw it on the map or import a KML or GeoJSON file.",h("button",{class:ok?"chip":"btn",onclick:()=>{fieldMode="boundary";curMap=null;render()}},[ok?"Edit":"Start drawing"])),
-   step(3,nm>0,"Game mode maps",nm?nm+(nm===1?" added":" added"):"Optional. Add objectives, spawns, zones and range rings for each game mode below.",null),
+   store?null:step(2,ok,"Playing area",ok?"Drawn":"Required. Draw it on the map or import a KML or GeoJSON file.",h("button",{class:ok?"chip":"btn",onclick:()=>{fieldMode="boundary";curMap=null;render()}},[ok?"Edit":"Start drawing"])),
+   store?null:step(3,nm>0,"Game mode maps",nm?nm+" added":"Optional. Add objectives, spawns, zones and range rings for each game mode below.",null),
    h("p",{class:"fine",text:"Publishing posts this field to the feed for "+(f.code||"your area")+" and nearby. Members can upvote or downvote it, and a field that reaches −5 is hidden from everyone except you and admins."}),
    pubErr,pb]))};
  w.appendChild(setup);api.fieldBoundary(f.id).then(drawSetup).catch(()=>drawSetup(null));
@@ -160,7 +167,7 @@ function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m
   const mkGroup=data=>{const g=L.layerGroup();if(data)L.geoJSON(data,{style:styleFor,pointToLayer:(ft,ll)=>layerForFeature(ft,ll),
     onEachFeature:(ft,l)=>{l.bindPopup(popupEl(ft));const lb=ft.properties&&ft.properties.label;if(labels&&lb&&l.bindTooltip)l.bindTooltip(tipEl(lb),{permanent:true,direction:"top",className:"maplbl"})}}).addTo(g);return g};
   const overlays={},fg=new L.FeatureGroup().addTo(map);
-  if(!editing){groups.b=mkGroup(bnd);overlays["Playing area"]=groups.b;groups.b.addTo(map);
+  if(!editing){groups.b=mkGroup(bnd);if(!bnd){const mk=L.marker([f.lat,f.lng],{icon:iconFor({kind:"marker"})});mk.bindPopup(popupEl({properties:{kind:"marker",label:f.name}}));groups.b.addLayer(mk)}overlays[f.kind==="store"?"Location":"Playing area"]=groups.b;groups.b.addTo(map);
    maps.forEach(m=>{groups[m.id]=mkGroup(geos[m.id]);overlays[m.name]=groups[m.id];if(cur&&m.id===cur.id)groups[m.id].addTo(map)})}
   else if(fieldMode==="boundary"){}
   else mkGroup(bnd).addTo(map);
@@ -203,7 +210,7 @@ function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m
    tools.appendChild(ex)}
   if(editing)editor(map,fg,f,cur,tools,msg,wrap)}).catch(e=>{box.textContent="";msg.textContent=e.message+" Check your connection and reload."});
  /* ---- owner tools ---- */
- if(own&&!editing){
+ if(own&&!editing&&f.kind!=="store"){
   const t=h("div",{class:"card"},[h("div",{class:"who"},["Field owner tools"])]);
   const row=h("div",{class:"row"});
   row.appendChild(h("button",{class:"btn",onclick:()=>{fieldMode="boundary";curMap=null;render()}},[bnd0(f)?"Edit playing area":"Draw playing area"]));
@@ -220,6 +227,7 @@ function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m
   t.appendChild(dz);w.appendChild(t)}
  const rp=f.published&&db.posts.find(p=>p.id===f.postId);
  if(rp){w.appendChild(h("h2",{text:"Community rating"}));w.appendChild(h("p",{class:"fine",text:"Upvote fields that are real and accurate. Downvote spam or misleading ones. At −5 a field is hidden."}));w.appendChild(postCard(rp,render,{noField:true}))}
+ if(own&&!editing&&f.kind==="store"){const two=h("button",{class:"chip",onclick:async()=>{if(!two.dataset.arm){two.dataset.arm=1;two.textContent="Click again to confirm";return}const e=await api.deleteField(f.id);if(e)flash(e);else{curField=null;render()}}},["Delete this store"]);w.appendChild(h("div",{class:"row"},[two]))}
  const up=db.events.filter(e=>e.fieldId===f.id&&!e.cancelled&&e.start>Date.now()-36e5).sort((a,b)=>a.start-b.start);
  w.appendChild(h("h2",{text:"Upcoming events here"}));
  if(!up.length)w.appendChild(empty(own?"No events yet. Host one from the Events tab and pick this field.":"No upcoming events at this field."));
