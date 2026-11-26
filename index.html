@@ -6,11 +6,13 @@
 <title>Airsoft Hub</title>
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://cdnjs.cloudflare.com https://tile.openstreetmap.org https://tile.opentopomap.org https://*.tile.opentopomap.org https://server.arcgisonline.com https://*.basemaps.cartocdn.com; connect-src 'self' https://tile.openstreetmap.org https://bbrlqxfenmmrffvsgdpr.supabase.co wss://bbrlqxfenmmrffvsgdpr.supabase.co https://api.zippopotam.us https://routing.openstreetmap.de; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
+<script src="theme.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f3f2ee;--card:#fff;--ink:#1c1f23;--mute:#5f656c;--line:#dedcd5;--od:#2b3440;--onod:#fff;--tip:#d9480f;--ontip:#fff;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#16181b;--card:#1f2327;--ink:#e8e9eb;--mute:#9aa0a8;--line:#32373d;--od:#aeb8c6;--onod:#14181d;--tip:#ff7a3d;--ontip:#1a0d00}}
+/* Dark is the default. Light only applies when someone picks it with the toggle in the sidebar. */
+:root:not([data-theme="light"]){color-scheme:dark;--bg:#16181b;--card:#1f2327;--ink:#e8e9eb;--mute:#9aa0a8;--line:#32373d;--od:#aeb8c6;--onod:#14181d;--tip:#ff7a3d;--ontip:#1a0d00}
 :root[data-theme="dark"]{color-scheme:dark;--bg:#16181b;--card:#1f2327;--ink:#e8e9eb;--mute:#9aa0a8;--line:#32373d;--od:#aeb8c6;--onod:#14181d;--tip:#ff7a3d;--ontip:#1a0d00}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:border-box}
@@ -109,7 +111,8 @@ body.noscroll{overflow:hidden}.mapbox.measuring{cursor:crosshair}.mapbox.measuri
 
 /* ===== Social-style look: tonal surfaces, rounded cards, icon sidebar, reaction bar, thumbnail tiles ===== */
 :root{--bg:#f0f2f5;--card:#fff;--line:#e4e6eb;--side:#fff;--hov:#e8eaee;--shadow:0 1px 2px rgba(0,0,0,.12)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1e1f22;--card:#2b2d31;--line:#3a3c42;--side:#17181a;--hov:#35373c;--shadow:0 1px 2px rgba(0,0,0,.5)}}
+/* Dark sidebar and surfaces (default). */
+:root:not([data-theme="light"]){--bg:#1e1f22;--card:#2b2d31;--line:#3a3c42;--side:#17181a;--hov:#35373c;--shadow:0 1px 2px rgba(0,0,0,.5)}
 :root[data-theme="dark"]{--bg:#1e1f22;--card:#2b2d31;--line:#3a3c42;--side:#17181a;--hov:#35373c;--shadow:0 1px 2px rgba(0,0,0,.5)}
 body{font-family:Barlow,system-ui,sans-serif}
 .card{border:0;border-radius:12px;box-shadow:var(--shadow);padding:16px}
@@ -203,6 +206,11 @@ textarea{border-radius:14px;min-height:64px}
  .nav:hover .acct .me,.nav:focus-within .acct .me{display:flex}
 }
 @media (prefers-reduced-motion:reduce){.nav .in,.brand .bf,.tab .tl{transition:none!important}}
+/* Theme toggle: a fixed button at the foot of the rail on desktop, a small icon beside the account on phones. */
+.themebtn{display:flex;align-items:center;gap:12px;background:none;border:0;border-radius:6px;padding:10px 12px;width:100%;color:var(--mute);cursor:pointer;font:inherit;text-align:left;white-space:nowrap}
+.themebtn:hover{background:var(--hov,rgba(128,128,128,.15));color:var(--ink)}.themebtn .ico{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.themebtn .tl{flex:1}
+@media(min-width:800px){.themebtn{order:4;margin-top:auto}.tabs{margin-bottom:12px}}
+@media(max-width:799px){.themebtn{position:fixed;right:0;bottom:0;z-index:21;width:56px;height:calc(56px + env(safe-area-inset-bottom,0px));padding:0 0 env(safe-area-inset-bottom,0px);justify-content:center;border-radius:0;background:var(--side);border-left:1px solid var(--line);border-top:1px solid var(--line)}.themebtn .tl{display:none}.tabs{padding-right:60px}}
 
 /* Content column fills the page width in any orientation. */
 .wrap,.shell.solo .wrap{max-width:none;width:100%;margin:0;padding-left:clamp(14px,3vw,40px);padding-right:clamp(14px,3vw,40px)}

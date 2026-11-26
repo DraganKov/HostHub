@@ -121,6 +121,10 @@ const ICONS={polls:"M5 20V11M12 20V4M19 20v-6",feed:"M3 11l9-8 9 8v9a1 1 0 0 1-1
  directory:"M4 4h16v16H4zM4 9h16M9 9v11",maps:"M9 4L3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14",finances:"M12 3v18M16.5 7.5C16 5.8 14.3 5 12 5 9.5 5 8 6.2 8 8c0 4.5 8.500 2.500 8.500 7 0 1.800-1.700 3-4.500 3-2.600 0-4.400-.9-4.800-2.800"};
 const icon=id=>{const s=document.createElementNS("http://www.w3.org/2000/svg","svg");s.setAttribute("viewBox","0 0 24 24");s.setAttribute("class","ico");s.setAttribute("aria-hidden","true");
  const p=document.createElementNS("http://www.w3.org/2000/svg","path");p.setAttribute("d",ICONS[id]||ICONS.feed);s.appendChild(p);return s};
+ICONS.sun="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4";ICONS.moon="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z";
+/* Dark is the default. This button sits at the foot of the sidebar on every page and switches to light and back. The choice is kept on this device only. */
+function themeToggle(){const dark=Theme.get()==="dark",to=dark?"Light mode":"Dark mode";
+ return h("button",{class:"themebtn",type:"button","aria-label":"Switch to "+to.toLowerCase(),title:to,onclick:()=>{Theme.toggle();drawNav()}},[icon(dark?"sun":"moon"),h("span",{class:"tl",text:to})])}
 function drawNav(){const n=$("#nav");n.innerHTML="";const sh=$("#shell");if(sh)sh.classList.toggle("solo",!!db.mfaPending);if(db.mfaPending){n.hidden=true;return}n.hidden=false;
  const bd=db.me?{alerts:db.notifs.filter(x=>x.to===db.me&&!x.read).length,messages:db.msgs.filter(m=>m.to===db.me&&!m.read).length}:{};
  const u=db.me?api.user(db.me):null,
@@ -128,7 +132,7 @@ function drawNav(){const n=$("#nav");n.innerHTML="";const sh=$("#shell");if(sh)s
    :h("div",{class:"acct"},[h("div",{class:"row2"},[h("button",{class:"btn",onclick:()=>openAuth("","login")},["Log in"]),h("button",{class:"chip",onclick:()=>openAuth("","signup")},["Create account"])])]);
  acct.className+=" accwrap";acct.appendChild(h("button",{class:"accmini",type:"button","aria-label":u?"Your profile":"Log in",onclick:()=>u?go("profile"):openAuth("","login")},[u?h("span",{class:"av",text:u.name.charAt(0).toUpperCase()}):icon("profile")]));
  n.appendChild(h("div",{class:"in"},[h("div",{class:"hdr"},[acct,h("div",{class:"brand"},[h("span",{class:"bm","aria-hidden":"true",text:BRAND[0].charAt(0)+BRAND[1].charAt(0)}),h("span",{class:"bf"},[BRAND[0]+" ",h("span",{text:BRAND[1]})])])]),
-  h("nav",{class:"tabs","aria-label":"Main"},META.filter(tabVisible).map(m=>h("button",{class:"tab","aria-current":m.id===route?"page":null,onclick:()=>go(m.id)},[icon(m.id),h("span",{class:"tl",text:m.label}),bd[m.id]?h("span",{class:"badge",text:String(bd[m.id])}):null])))]))}
+  h("nav",{class:"tabs","aria-label":"Main"},META.filter(tabVisible).map(m=>h("button",{class:"tab","aria-current":m.id===route?"page":null,onclick:()=>go(m.id)},[icon(m.id),h("span",{class:"tl",text:m.label}),bd[m.id]?h("span",{class:"badge",text:String(bd[m.id])}):null]))),themeToggle()]))}
 function render(){const a=$("#app");a.innerHTML="";drawNav();
  if(route!=="maps"&&typeof activeMap!=="undefined"&&activeMap){try{activeMap.remove()}catch(e){}activeMap=null}
  if(db.mfaPending){a.appendChild(mfaView());return}
