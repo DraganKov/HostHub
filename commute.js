@@ -69,7 +69,7 @@ function commutePanel(t){
  return reveal("trip:"+t.key,"When should I leave?",build,{hide:"Close trip planner"})}
 function routeMap(r,t){const box=h("div",{class:"mapbox",role:"region","aria-label":"Route to "+t.name}),wrap=h("div",{class:"tripmap"},[box]);box.textContent="Loading map…";
  loadLeaflet().then(()=>{box.textContent="";const map=L.map(box,{scrollWheelZoom:false});activeMap=map;fitOnResize(map,box);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(map);
+  streetTiles().addTo(map);
   const line=L.geoJSON({type:"Feature",properties:{},geometry:r.geo},{style:()=>({color:"#1c7ed6",weight:5,opacity:.85})});line.addTo(map);
   L.circleMarker([r.from.lat,r.from.lng],{radius:7,weight:3,color:"#212529",fillColor:"#fff",fillOpacity:1}).addTo(map);
   L.circleMarker([t.lat,t.lng],{radius:8,weight:2,color:"#fff",fillColor:"#c92a2a",fillOpacity:1}).addTo(map);

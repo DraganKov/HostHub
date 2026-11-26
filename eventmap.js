@@ -24,7 +24,7 @@ function eventMapPanel(e){const f=db.fields.find(x=>x.id===e.fieldId),m=db.maps.
  box.textContent="Loading map…";
  loadLeaflet().then(async()=>{box.textContent="";
   const map=L.map(box,{scrollWheelZoom:false}).setView([e.lat,e.lng],15);evMaps.push(map);fitOnResize(map,box);
-  const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}),
+  const osm=streetTiles(),
    topo=L.tileLayer("https://tile.opentopomap.org/{z}/{x}/{y}.png",{maxZoom:17,attribution:"Map data © OpenStreetMap contributors, SRTM · Style © OpenTopoMap (CC-BY-SA)"}),
    sat=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Imagery © Esri, Maxar, Earthstar Geographics"});
   osm.addTo(map);if(L.control.scale)L.control.scale({imperial:false}).addTo(map);

@@ -9,6 +9,14 @@ const SRI={[LF.js]:"sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00
  [LF.ms]:"sha384-nBeSn7MTFykY3q7Irc8DaMFNJsqvJE1xMmD74ebMBp8ZK6QTtcooJ6Yb8+62w8ur",[LF.mgrs]:"sha384-Vc5FnKUcRBV6CdFHk75c9G1+FBRVd2BSD6txVIXP6t7+FLRM2OAj7B8Kmo8Xqn3d"};
 let lfPromise=null;
 /* Leaflet (maps) + Leaflet.draw (drawing) are required. milsymbol (NATO-style unit symbols) and mgrs (military grid references) are optional extras. */
+/* Street tiles. OpenStreetMap's public tile server answers with an error picture (HTTP 403, "app not following usage rules") when the
+   browser sends no Referer header, which some privacy settings and extensions do. We check once per visit. If OSM refuses, every street
+   layer switches to CARTO's tiles, which are drawn from the same OpenStreetMap data and need no Referer. */
+const TILES={osm:{url:"https://tile.openstreetmap.org/{z}/{x}/{y}.png",attr:"© OpenStreetMap contributors"},alt:{url:"https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",attr:"© OpenStreetMap contributors © CARTO"}};
+let tileMode="osm",tileProbe=null;const tileLayers=[];
+function streetTiles(){const t=TILES[tileMode],l=L.tileLayer(t.url,{maxZoom:19,attribution:t.attr,subdomains:"abcd",referrerPolicy:"strict-origin-when-cross-origin"});tileLayers.push(l);
+ if(!tileProbe)tileProbe=fetch("https://tile.openstreetmap.org/0/0/0.png",{mode:"cors"}).then(r=>{if(!r.ok)throw new Error("blocked")}).catch(()=>{tileMode="alt";tileLayers.forEach(x=>{x.setUrl(TILES.alt.url);if(x.options)x.options.attribution=TILES.alt.attr;if(x._map&&x._map.attributionControl){x._map.attributionControl.addAttribution("© CARTO")}})});
+ return l}
 function loadLeaflet(){if(window.L&&L.Control&&L.Control.Draw)return Promise.resolve();if(lfPromise)return lfPromise;
  const css=u=>{const l=document.createElement("link");l.rel="stylesheet";l.href=u;if(SRI[u]){l.integrity=SRI[u];l.crossOrigin="anonymous"}document.head.appendChild(l)};
  const js=u=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=u;if(SRI[u]){s.integrity=SRI[u];s.crossOrigin="anonymous"}s.onload=ok;s.onerror=()=>no(new Error("Could not load the map library."));document.head.appendChild(s)});
@@ -170,7 +178,7 @@ function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m
  box.textContent="Loading map…";
  loadLeaflet().then(async()=>{box.textContent="";
   const map=L.map(box,{scrollWheelZoom:false}).setView([f.lat,f.lng],15);activeMap=map;fitOnResize(map,box);
-  const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}),
+  const osm=streetTiles(),
    topo=L.tileLayer("https://tile.opentopomap.org/{z}/{x}/{y}.png",{maxZoom:17,attribution:"Map data © OpenStreetMap contributors, SRTM · Style © OpenTopoMap (CC-BY-SA)"}),
    sat=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Imagery © Esri, Maxar, Earthstar Geographics"});
   osm.addTo(map);
