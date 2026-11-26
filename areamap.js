@@ -44,7 +44,7 @@ function areaMapPanel(getListings,onView){
    sat=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Imagery © Esri, Maxar, Earthstar Geographics"});
   osm.addTo(map);if(L.control.scale)L.control.scale({imperial:false}).addTo(map);
   groups={field:L.layerGroup(),store:L.layerGroup(),event:L.layerGroup()};Object.values(groups).forEach(g=>g.addTo(map));
-  L.control.layers({"Street map":osm,"Topo (terrain)":topo,"Satellite":sat},{"Fields":groups.field,"Stores":groups.store,"Events":groups.event},{collapsed:true}).addTo(map);
+  L.control.layers({"Street map":osm,"Street map (alternate)":altTiles(),"Topo (terrain)":topo,"Satellite":sat},{"Fields":groups.field,"Stores":groups.store,"Events":groups.event},{collapsed:true}).addTo(map);
   /* The wheel only zooms the map after you click it, so scrolling the page never gets stuck on the map. */
   map.on("click",()=>{if(map.scrollWheelZoom)map.scrollWheelZoom.enable()});box.addEventListener("mouseleave",()=>{if(map.scrollWheelZoom)map.scrollWheelZoom.disable()});
   ready=true;home();you();draw();

@@ -33,7 +33,7 @@ function eventMapPanel(e){const f=db.fields.find(x=>x.id===e.fieldId),m=db.maps.
    const gj=L.geoJSON(x.gj,{style:styleFor,pointToLayer:(ft,ll)=>layerForFeature(ft,ll),onEachFeature:(ft,l)=>{if(l.bindPopup)l.bindPopup(popupEl(ft))}});gj.addTo(g);g.addTo(map);overlays[x.name]=g;
    try{const bb=gj.getBounds();if(bb&&bb.isValid()&&!bounds)bounds=bb}catch(er){}});
   const pin=L.marker([e.lat,e.lng],{icon:iconFor({kind:"objective"})});if(pin.bindPopup)pin.bindPopup(popupEl({properties:{kind:"objective",label:e.venue||e.title}}));pin.addTo(map);
-  L.control.layers({"Street map":osm,"Topo (terrain)":topo,"Satellite":sat},overlays,{collapsed:true}).addTo(map);
+  L.control.layers({"Street map":osm,"Street map (alternate)":altTiles(),"Topo (terrain)":topo,"Satellite":sat},overlays,{collapsed:true}).addTo(map);
   if(bounds)map.fitBounds(bounds,{padding:[20,20]});
   map.on("mousemove",ev=>{ro.textContent=fmtLL(ev.latlng)});map.on("click",ev=>{ro.textContent=fmtLL(ev.latlng)});
   if(!fl.length)msg.textContent=f?"The host hasn’t drawn a map for this event yet.":""}).catch(er=>{box.textContent="";msg.textContent=er.message+" Check your connection and reload."});

@@ -14,9 +14,11 @@ let lfPromise=null;
    layer switches to CARTO's tiles, which are drawn from the same OpenStreetMap data and need no Referer. */
 const TILES={osm:{url:"https://tile.openstreetmap.org/{z}/{x}/{y}.png",attr:"© OpenStreetMap contributors"},alt:{url:"https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",attr:"© OpenStreetMap contributors © CARTO"}};
 let tileMode="osm",tileProbe=null;const tileLayers=[];
-function streetTiles(){const t=TILES[tileMode],l=L.tileLayer(t.url,{maxZoom:19,attribution:t.attr,subdomains:"abcd",referrerPolicy:"strict-origin-when-cross-origin"});tileLayers.push(l);
+function streetTiles(){const t=TILES[tileMode],l=L.tileLayer(t.url,{maxZoom:19,attribution:t.attr,subdomains:"abcd",referrerPolicy:"strict-origin-when-cross-origin",crossOrigin:true});tileLayers.push(l);
  if(!tileProbe)tileProbe=fetch("https://tile.openstreetmap.org/0/0/0.png",{mode:"cors"}).then(r=>{if(!r.ok)throw new Error("blocked")}).catch(()=>{tileMode="alt";tileLayers.forEach(x=>{x.setUrl(TILES.alt.url);if(x.options)x.options.attribution=TILES.alt.attr;if(x._map&&x._map.attributionControl){x._map.attributionControl.addAttribution("© CARTO")}})});
  return l}
+/* A street layer that always uses CARTO, offered in the layer menu so anyone who sees an OpenStreetMap error picture can switch by hand. */
+function altTiles(){return L.tileLayer(TILES.alt.url,{maxZoom:19,attribution:TILES.alt.attr,subdomains:"abcd",referrerPolicy:"strict-origin-when-cross-origin",crossOrigin:true})}
 function loadLeaflet(){if(window.L&&L.Control&&L.Control.Draw)return Promise.resolve();if(lfPromise)return lfPromise;
  const css=u=>{const l=document.createElement("link");l.rel="stylesheet";l.href=u;if(SRI[u]){l.integrity=SRI[u];l.crossOrigin="anonymous"}document.head.appendChild(l)};
  const js=u=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=u;if(SRI[u]){s.integrity=SRI[u];s.crossOrigin="anonymous"}s.onload=ok;s.onerror=()=>no(new Error("Could not load the map library."));document.head.appendChild(s)});
@@ -194,7 +196,7 @@ function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m
    maps.forEach(m=>{groups[m.id]=mkGroup(geos[m.id]);overlays[m.name]=groups[m.id];if(cur&&m.id===cur.id)groups[m.id].addTo(map)})}
   else if(fieldMode==="boundary"){}
   else mkGroup(bnd).addTo(map);
-  let ctl=L.control.layers({"Street map":osm,"Topo (terrain)":topo,"Satellite":sat},overlays,{collapsed:true}).addTo(map);
+  let ctl=L.control.layers({"Street map":osm,"Street map (alternate)":altTiles(),"Topo (terrain)":topo,"Satellite":sat},overlays,{collapsed:true}).addTo(map);
   const addFlat=(data)=>{if(!data)return;L.geoJSON(data,{style:styleFor,pointToLayer:(ft,ll)=>layerForFeature(ft,ll),onEachFeature:(ft,l)=>{l.feature=ft;fg.addLayer(l)}})};
   if(editing){if(fieldMode==="boundary")addFlat(bnd);else addFlat(geos[cur.id])}
   const fit=()=>{try{let b=null;if(editing&&fg.getLayers().length)b=fg.getBounds();else if(bnd)b=L.geoJSON(bnd).getBounds();if(b&&b.isValid())map.fitBounds(b,{padding:[20,20]});else map.setView([f.lat,f.lng],15)}catch(e){}};fit();
@@ -222,7 +224,7 @@ function fieldView(f){const w=h("div"),own=db.me===f.owner,maps=db.maps.filter(m
    if(!editing){const on=Object.keys(groups).filter(k=>map.hasLayer(groups[k]));Object.keys(groups).forEach(k=>{map.removeLayer(groups[k])});
     groups.b=mkGroup(bnd);maps.forEach(m=>{groups[m.id]=mkGroup(geos[m.id])});on.forEach(k=>groups[k].addTo(map));
     /* overlay control keeps its original groups; rebuild it */
-    if(ctl){map.removeControl(ctl)}ctl=L.control.layers({"Street map":osm,"Topo (terrain)":topo,"Satellite":sat},Object.assign({"Playing area":groups.b},...maps.map(m=>({[m.name]:groups[m.id]}))),{collapsed:true}).addTo(map)}});
+    if(ctl){map.removeControl(ctl)}ctl=L.control.layers({"Street map":osm,"Street map (alternate)":altTiles(),"Topo (terrain)":topo,"Satellite":sat},Object.assign({"Playing area":groups.b},...maps.map(m=>({[m.name]:groups[m.id]}))),{collapsed:true}).addTo(map)}});
   bar.appendChild(btn("Centre on field",fit));if(!editing)bar.appendChild(mBtn);bar.appendChild(locate);if(!editing)bar.appendChild(lbl);bar.appendChild(fsBtn);bar.appendChild(mInfo);
   /* ---- export ---- */
   const folders=()=>{const l=[{name:"Playing area",gj:bnd}];maps.forEach(m=>l.push({name:m.name,gj:geos[m.id]}));return l.filter(x=>x.gj&&x.gj.features&&x.gj.features.length)};
